@@ -830,68 +830,205 @@ pub fn build_scene(settings: &Settings) -> Scene {
             Scene { effects, keys }
         }
         "cyberpunk" => {
-            let p = period(settings.speed, 7.0, 1.0);
-            let (effects, keys) = make_wave_palette(
-                &[(255, 235, 0), (0, 240, 255), (255, 90, 0)],
-                settings.brightness,
-                p,
-                get_wave(settings),
+            // High-voltage cyber contrast: sharp pulsating yellow keys with cyan laser scanline
+            let p = period(settings.speed, 3.5, 0.6);
+            let cyber_yellow = scale_color((255, 235, 0), settings.brightness);
+            let cyber_cyan = scale_color((0, 245, 255), settings.brightness);
+            let cyber_dark = scale_color((20, 10, 0), settings.brightness);
+            let t_pulse = units(p * 0.15);
+            let t_hold = units(p * 0.40);
+            let (tr_y, _) = fade(
+                cyber_yellow,
+                &[(cyber_dark, t_pulse), (cyber_yellow, t_hold)],
             );
+            let (tr_c, _) = fade(cyber_cyan, &[(cyber_dark, t_pulse), (cyber_cyan, t_hold)]);
+            let mut effects = HashMap::new();
+            effects.insert(0, Effect::new(cyber_yellow, tr_y, Some(get_wave(settings))));
+            effects.insert(1, Effect::new(cyber_cyan, tr_c, None));
+            let mut keys = HashMap::new();
+            for k in layout::get_keys() {
+                let slot = if (k.code % 4) == 0 { 1 } else { 0 };
+                keys.insert(
+                    k.code,
+                    Key {
+                        mode: MODE_EFFECT,
+                        effect: slot,
+                        ..Default::default()
+                    },
+                );
+            }
             Scene { effects, keys }
         }
         "vaporwave" => {
-            let p = period(settings.speed, 10.0, 1.5);
-            let (effects, keys) = make_wave_palette(
-                &[
-                    (255, 113, 206),
-                    (1, 205, 254),
-                    (5, 255, 161),
-                    (185, 103, 255),
-                ],
-                settings.brightness,
-                p,
-                get_wave(settings),
-            );
+            // Dreamy 80s aesthetic: smooth color shift across pastel violet, cyan and peach
+            let p = period(settings.speed, 9.0, 1.4);
+            let v_pink = scale_color((255, 115, 205), settings.brightness);
+            let v_cyan = scale_color((0, 210, 255), settings.brightness);
+            let v_peach = scale_color((255, 180, 140), settings.brightness);
+            let v_purple = scale_color((170, 90, 255), settings.brightness);
+            let step = units(p * 0.25);
+            let mut effects = HashMap::new();
+            let pal = [v_pink, v_cyan, v_peach, v_purple];
+            for (slot, &col) in pal.iter().enumerate() {
+                let next = pal[(slot + 1) % 4];
+                let (tr, _) = fade(col, &[(next, step), (col, step)]);
+                effects.insert(slot as u8, Effect::new(col, tr, None));
+            }
+            let mut keys = HashMap::new();
+            for k in layout::get_keys() {
+                let slot = ((k.x as usize) + (k.y as usize)) % 4;
+                keys.insert(
+                    k.code,
+                    Key {
+                        mode: MODE_EFFECT,
+                        effect: slot as u8,
+                        ..Default::default()
+                    },
+                );
+            }
             Scene { effects, keys }
         }
         "ocean" => {
-            let p = period(settings.speed, 9.0, 1.3);
-            let (effects, keys) = make_wave_palette(
-                &[(0, 210, 190), (0, 50, 180), (0, 160, 255)],
-                settings.brightness,
-                p,
-                get_wave(settings),
+            // Oceanic swell: deep abyssal navy baseline with rhythmic turquoise crest swells
+            let p = period(settings.speed, 8.0, 1.2);
+            let deep_navy = scale_color((0, 20, 70), settings.brightness);
+            let ocean_teal = scale_color((0, 220, 200), settings.brightness);
+            let ocean_cyan = scale_color((0, 140, 255), settings.brightness);
+            let swell_up = units(p * 0.35);
+            let swell_down = units(p * 0.45);
+            let rest = units(p * 0.20);
+            let (tr, _) = fade(
+                deep_navy,
+                &[
+                    (ocean_teal, swell_up),
+                    (ocean_cyan, swell_down),
+                    (deep_navy, rest),
+                ],
             );
+            let mut effects = HashMap::new();
+            let wave_out = Wave {
+                x: 0.5,
+                y: 1.0,
+                along_x: false,
+                along_y: true,
+                wavelength: 0.45,
+                inward: false,
+            };
+            effects.insert(0, Effect::new(deep_navy, tr, Some(wave_out)));
+            let keys = all_keys_matching(|| Key {
+                mode: MODE_EFFECT,
+                effect: 0,
+                ..Default::default()
+            });
             Scene { effects, keys }
         }
         "sunset" => {
-            let p = period(settings.speed, 8.0, 1.2);
-            let (effects, keys) = make_wave_palette(
-                &[(255, 60, 0), (255, 0, 120), (120, 0, 160), (255, 170, 0)],
-                settings.brightness,
-                p,
-                get_wave(settings),
-            );
+            // Miami horizon gradient: static vertical elevation gradient with gentle golden breeze
+            let p = period(settings.speed, 7.0, 1.1);
+            let ruby = scale_color((255, 30, 40), settings.brightness);
+            let orange = scale_color((255, 130, 0), settings.brightness);
+            let violet = scale_color((130, 0, 160), settings.brightness);
+            let step = units(p * 0.30);
+            let (tr0, _) = fade(ruby, &[(orange, step), (ruby, step)]);
+            let (tr1, _) = fade(orange, &[(violet, step), (orange, step)]);
+            let (tr2, _) = fade(violet, &[(ruby, step), (violet, step)]);
+            let mut effects = HashMap::new();
+            effects.insert(0, Effect::new(ruby, tr0, None));
+            effects.insert(1, Effect::new(orange, tr1, None));
+            effects.insert(2, Effect::new(violet, tr2, None));
+            let mut keys = HashMap::new();
+            for k in layout::get_keys() {
+                let slot = if k.y < 2.0 {
+                    2
+                } else if k.y < 4.0 {
+                    1
+                } else {
+                    0
+                };
+                keys.insert(
+                    k.code,
+                    Key {
+                        mode: MODE_EFFECT,
+                        effect: slot,
+                        ..Default::default()
+                    },
+                );
+            }
             Scene { effects, keys }
         }
         "magma" => {
-            let p = period(settings.speed, 7.0, 1.1);
-            let (effects, keys) = make_wave_palette(
-                &[(40, 0, 0), (255, 40, 0), (255, 140, 0)],
-                settings.brightness,
-                p,
-                get_wave(settings),
+            // Molten volcanic flow: cracked dark volcanic rock surging with glowing orange magma
+            let p = period(settings.speed, 6.0, 0.9);
+            let rock_black = scale_color((20, 0, 0), settings.brightness);
+            let magma_hot = scale_color((255, 60, 0), settings.brightness);
+            let magma_yellow = scale_color((255, 200, 20), settings.brightness);
+            let surge = units(p * 0.20);
+            let cool = units(p * 0.40);
+            let crust = units(p * 0.40);
+            let (tr_rock, _) = fade(
+                rock_black,
+                &[
+                    (magma_hot, surge),
+                    (magma_yellow, surge),
+                    (rock_black, cool + crust),
+                ],
             );
+            let (tr_core, _) = fade(magma_hot, &[(magma_yellow, surge), (magma_hot, cool)]);
+            let mut effects = HashMap::new();
+            effects.insert(
+                0,
+                Effect::new(rock_black, tr_rock, Some(get_wave(settings))),
+            );
+            effects.insert(1, Effect::new(magma_hot, tr_core, None));
+            let mut keys = HashMap::new();
+            for k in layout::get_keys() {
+                let slot = if (k.code % 3) == 0 { 1 } else { 0 };
+                keys.insert(
+                    k.code,
+                    Key {
+                        mode: MODE_EFFECT,
+                        effect: slot,
+                        ..Default::default()
+                    },
+                );
+            }
             Scene { effects, keys }
         }
         "blizzard" => {
-            let p = period(settings.speed, 8.0, 1.2);
-            let (effects, keys) = make_wave_palette(
-                &[(220, 245, 255), (130, 220, 255), (0, 140, 255)],
-                settings.brightness,
-                p,
-                get_wave(settings),
-            );
+            // Arctic blizzard: icy howling polar whites and cyan frost gusts across keys
+            let p = period(settings.speed, 4.0, 0.6);
+            let ice_white = scale_color((255, 255, 255), settings.brightness);
+            let ice_cyan = scale_color((130, 230, 255), settings.brightness);
+            let ice_blue = scale_color((0, 60, 160), settings.brightness);
+            let gust = units(p * 0.12);
+            let linger = units(p * 0.28);
+            let calm = units(p * 0.60);
+            let mut effects = HashMap::new();
+            for slot in 0..STAR_SLOTS {
+                let delay = units(slot as f32 * (p * 0.60 / (STAR_SLOTS as f32)));
+                let frames = &[
+                    (ice_blue, delay),
+                    (ice_white, gust),
+                    (ice_cyan, linger),
+                    (ice_blue, calm),
+                ];
+                let (tr, _) = fade(ice_blue, frames);
+                effects.insert(slot as u8, Effect::new(ice_blue, tr, None));
+            }
+            let mut codes: Vec<u8> = layout::get_keys().iter().map(|k| k.code).collect();
+            let mut rng = rand::rngs::StdRng::seed_from_u64(24);
+            codes.shuffle(&mut rng);
+            let mut keys = HashMap::new();
+            for (i, code) in codes.into_iter().enumerate() {
+                keys.insert(
+                    code,
+                    Key {
+                        mode: MODE_EFFECT,
+                        effect: (i % STAR_SLOTS) as u8,
+                        ..Default::default()
+                    },
+                );
+            }
             Scene { effects, keys }
         }
         "nebula" => {
@@ -905,53 +1042,165 @@ pub fn build_scene(settings: &Settings) -> Scene {
             Scene { effects, keys }
         }
         "toxic" => {
-            let p = period(settings.speed, 6.0, 0.9);
-            let (effects, keys) = make_wave_palette(
-                &[(57, 255, 20), (210, 255, 0), (0, 180, 20)],
-                settings.brightness,
-                p,
-                get_wave(settings),
+            // Radioactive biohazard: pulsing acid lime waves with sharp yellow warning strobes
+            let p = period(settings.speed, 3.5, 0.5);
+            let acid_lime = scale_color((40, 255, 0), settings.brightness);
+            let hazard_yellow = scale_color((240, 255, 0), settings.brightness);
+            let toxic_dim = scale_color((0, 40, 0), settings.brightness);
+            let step = units(p * 0.15);
+            let pause = units(p * 0.50);
+            let (tr0, _) = fade(
+                toxic_dim,
+                &[(acid_lime, step), (hazard_yellow, step), (toxic_dim, pause)],
             );
+            let (tr1, _) = fade(acid_lime, &[(hazard_yellow, step), (acid_lime, step)]);
+            let mut effects = HashMap::new();
+            effects.insert(0, Effect::new(toxic_dim, tr0, Some(get_wave(settings))));
+            effects.insert(1, Effect::new(acid_lime, tr1, None));
+            let mut keys = HashMap::new();
+            for k in layout::get_keys() {
+                let slot = if k.x < 5.0 || k.x > 14.0 { 1 } else { 0 };
+                keys.insert(
+                    k.code,
+                    Key {
+                        mode: MODE_EFFECT,
+                        effect: slot,
+                        ..Default::default()
+                    },
+                );
+            }
             Scene { effects, keys }
         }
         "sakura" => {
-            let p = period(settings.speed, 9.0, 1.4);
-            let (effects, keys) = make_wave_palette(
-                &[(255, 183, 197), (255, 240, 245), (255, 105, 180)],
-                settings.brightness,
-                p,
-                get_wave(settings),
-            );
+            // Spring blossom: soft petaline pinks gently falling with floating white highlights
+            let p = period(settings.speed, 8.0, 1.2);
+            let sakura_pink = scale_color((255, 175, 195), settings.brightness);
+            let sakura_petal = scale_color((255, 235, 245), settings.brightness);
+            let sakura_deep = scale_color((220, 90, 150), settings.brightness);
+            let step = units(p * 0.30);
+            let mut effects = HashMap::new();
+            for slot in 0..4 {
+                let col1 = if slot % 2 == 0 {
+                    sakura_pink
+                } else {
+                    sakura_deep
+                };
+                let col2 = if slot % 2 == 0 {
+                    sakura_petal
+                } else {
+                    sakura_pink
+                };
+                let (tr, _) = fade(col1, &[(col2, step), (col1, step)]);
+                effects.insert(slot as u8, Effect::new(col1, tr, None));
+            }
+            let mut keys = HashMap::new();
+            for k in layout::get_keys() {
+                let slot = (((k.x * 1.5) as usize) + ((k.y * 2.0) as usize)) % 4;
+                keys.insert(
+                    k.code,
+                    Key {
+                        mode: MODE_EFFECT,
+                        effect: slot as u8,
+                        ..Default::default()
+                    },
+                );
+            }
             Scene { effects, keys }
         }
         "solar" => {
-            let p = period(settings.speed, 6.5, 1.0);
-            let (effects, keys) = make_wave_palette(
-                &[(255, 255, 230), (255, 190, 0), (255, 70, 0)],
-                settings.brightness,
-                p,
-                get_wave(settings),
+            // Coronal solar flare: radiating blinding gold and deep fiery core
+            let p = period(settings.speed, 5.0, 0.8);
+            let solar_core = scale_color((255, 90, 0), settings.brightness);
+            let solar_flare = scale_color((255, 230, 40), settings.brightness);
+            let solar_burst = scale_color((255, 255, 255), settings.brightness);
+            let wave_radial = Wave {
+                x: 0.5,
+                y: 0.5,
+                along_x: true,
+                along_y: true,
+                wavelength: 0.30,
+                inward: false,
+            };
+            let step = units(p * 0.15);
+            let linger = units(p * 0.35);
+            let (tr, _) = fade(
+                solar_core,
+                &[
+                    (solar_burst, step),
+                    (solar_flare, linger),
+                    (solar_core, linger),
+                ],
             );
+            let mut effects = HashMap::new();
+            effects.insert(0, Effect::new(solar_core, tr, Some(wave_radial)));
+            let keys = all_keys_matching(|| Key {
+                mode: MODE_EFFECT,
+                effect: 0,
+                ..Default::default()
+            });
             Scene { effects, keys }
         }
         "forest" => {
-            let p = period(settings.speed, 10.0, 1.5);
-            let (effects, keys) = make_wave_palette(
-                &[(0, 160, 60), (20, 70, 20), (40, 210, 80)],
-                settings.brightness,
-                p,
-                get_wave(settings),
+            // Deep woodland canopy: emerald leaves with dappled golden sunbeams
+            let p = period(settings.speed, 7.0, 1.1);
+            let forest_emerald = scale_color((0, 160, 60), settings.brightness);
+            let forest_moss = scale_color((20, 80, 25), settings.brightness);
+            let sunbeam = scale_color((240, 230, 100), settings.brightness);
+            let step = units(p * 0.25);
+            let (tr0, _) = fade(
+                forest_emerald,
+                &[(forest_moss, step), (forest_emerald, step)],
             );
+            let (tr1, _) = fade(forest_moss, &[(sunbeam, step), (forest_moss, step)]);
+            let mut effects = HashMap::new();
+            effects.insert(0, Effect::new(forest_emerald, tr0, None));
+            effects.insert(1, Effect::new(forest_moss, tr1, None));
+            let mut keys = HashMap::new();
+            for k in layout::get_keys() {
+                let slot = if (k.code % 6) == 0 { 1 } else { 0 };
+                keys.insert(
+                    k.code,
+                    Key {
+                        mode: MODE_EFFECT,
+                        effect: slot,
+                        ..Default::default()
+                    },
+                );
+            }
             Scene { effects, keys }
         }
         "galaxy" => {
-            let p = period(settings.speed, 12.0, 1.8);
-            let (effects, keys) = make_wave_palette(
-                &[(25, 0, 75), (0, 180, 220), (160, 0, 230)],
-                settings.brightness,
-                p,
-                get_wave(settings),
+            // Spiral galaxy: deep midnight core with cyan arm rotating around center
+            let p = period(settings.speed, 9.0, 1.4);
+            let galaxy_dark = scale_color((15, 0, 50), settings.brightness);
+            let galaxy_cyan = scale_color((0, 200, 240), settings.brightness);
+            let galaxy_star = scale_color((255, 255, 255), settings.brightness);
+            let galaxy_purple = scale_color((170, 0, 255), settings.brightness);
+            let wave_spiral = Wave {
+                x: 0.5,
+                y: 0.5,
+                along_x: true,
+                along_y: false,
+                wavelength: 0.40,
+                inward: false,
+            };
+            let step = units(p * 0.20);
+            let (tr, _) = fade(
+                galaxy_dark,
+                &[
+                    (galaxy_purple, step),
+                    (galaxy_cyan, step),
+                    (galaxy_star, step),
+                    (galaxy_dark, step),
+                ],
             );
+            let mut effects = HashMap::new();
+            effects.insert(0, Effect::new(galaxy_dark, tr, Some(wave_spiral)));
+            let keys = all_keys_matching(|| Key {
+                mode: MODE_EFFECT,
+                effect: 0,
+                ..Default::default()
+            });
             Scene { effects, keys }
         }
         "tron" => {
@@ -1156,121 +1405,312 @@ pub fn build_scene(settings: &Settings) -> Scene {
             Scene { effects, keys }
         }
         "dusk" => {
-            let p = period(settings.speed, 9.0, 1.3);
-            let (effects, keys) = make_wave_palette(
-                &[(40, 20, 80), (130, 80, 180), (20, 40, 100)],
-                settings.brightness,
-                p,
-                get_wave(settings),
-            );
+            // Twilight gradient: soothing lavender wash with deep navy shadows
+            let p = period(settings.speed, 8.0, 1.2);
+            let dusk_lav = scale_color((130, 80, 180), settings.brightness);
+            let dusk_navy = scale_color((20, 30, 80), settings.brightness);
+            let step = units(p * 0.40);
+            let (tr0, _) = fade(dusk_lav, &[(dusk_navy, step), (dusk_lav, step)]);
+            let (tr1, _) = fade(dusk_navy, &[(dusk_lav, step), (dusk_navy, step)]);
+            let mut effects = HashMap::new();
+            effects.insert(0, Effect::new(dusk_lav, tr0, None));
+            effects.insert(1, Effect::new(dusk_navy, tr1, None));
+            let mut keys = HashMap::new();
+            for k in layout::get_keys() {
+                let slot = if (k.code % 2) == 0 { 0 } else { 1 };
+                keys.insert(
+                    k.code,
+                    Key {
+                        mode: MODE_EFFECT,
+                        effect: slot,
+                        ..Default::default()
+                    },
+                );
+            }
             Scene { effects, keys }
         }
         "emerald" => {
-            let p = period(settings.speed, 8.0, 1.2);
-            let (effects, keys) = make_wave_palette(
-                &[(0, 200, 100), (0, 60, 40), (120, 255, 180)],
-                settings.brightness,
-                p,
-                get_wave(settings),
+            // Emerald Isle: deep green field with sparkling crystalline seafoam ripples
+            let p = period(settings.speed, 6.0, 0.9);
+            let em_deep = scale_color((0, 120, 50), settings.brightness);
+            let em_bright = scale_color((0, 240, 120), settings.brightness);
+            let seafoam = scale_color((180, 255, 220), settings.brightness);
+            let wave_diag = Wave {
+                x: 0.0,
+                y: 0.0,
+                along_x: true,
+                along_y: true,
+                wavelength: 0.35,
+                inward: false,
+            };
+            let step = units(p * 0.25);
+            let (tr, _) = fade(
+                em_deep,
+                &[(em_bright, step), (seafoam, step), (em_deep, step)],
             );
+            let mut effects = HashMap::new();
+            effects.insert(0, Effect::new(em_deep, tr, Some(wave_diag)));
+            let keys = all_keys_matching(|| Key {
+                mode: MODE_EFFECT,
+                effect: 0,
+                ..Default::default()
+            });
             Scene { effects, keys }
         }
         "amethyst" => {
-            let p = period(settings.speed, 8.5, 1.2);
-            let (effects, keys) = make_wave_palette(
-                &[(153, 50, 204), (75, 0, 130), (218, 112, 214)],
-                settings.brightness,
-                p,
-                get_wave(settings),
-            );
+            // Amethyst geode: deep royal violet core with diamond facet shimmers
+            let p = period(settings.speed, 5.0, 0.8);
+            let violet_deep = scale_color((70, 0, 140), settings.brightness);
+            let magenta_bright = scale_color((220, 40, 220), settings.brightness);
+            let crystal_white = scale_color((250, 230, 255), settings.brightness);
+            let shimmer = units(p * 0.12);
+            let glow = units(p * 0.38);
+            let rest = units(p * 0.50);
+            let mut effects = HashMap::new();
+            for slot in 0..STAR_SLOTS {
+                let delay = units(slot as f32 * (p * 0.50 / (STAR_SLOTS as f32)));
+                let frames = &[
+                    (violet_deep, delay),
+                    (crystal_white, shimmer),
+                    (magenta_bright, glow),
+                    (violet_deep, rest),
+                ];
+                let (tr, _) = fade(violet_deep, frames);
+                effects.insert(slot as u8, Effect::new(violet_deep, tr, None));
+            }
+            let mut codes: Vec<u8> = layout::get_keys().iter().map(|k| k.code).collect();
+            let mut rng = rand::rngs::StdRng::seed_from_u64(57);
+            codes.shuffle(&mut rng);
+            let mut keys = HashMap::new();
+            for (i, code) in codes.into_iter().enumerate() {
+                keys.insert(
+                    code,
+                    Key {
+                        mode: MODE_EFFECT,
+                        effect: (i % STAR_SLOTS) as u8,
+                        ..Default::default()
+                    },
+                );
+            }
             Scene { effects, keys }
         }
         "golden" => {
-            let p = period(settings.speed, 7.5, 1.1);
-            let (effects, keys) = make_wave_palette(
-                &[(255, 215, 0), (255, 140, 0), (180, 90, 0)],
-                settings.brightness,
-                p,
-                get_wave(settings),
-            );
+            // Golden hour: warm amber wash propagating inward with soft orange glow
+            let p = period(settings.speed, 7.0, 1.1);
+            let gold_core = scale_color((255, 190, 0), settings.brightness);
+            let gold_amber = scale_color((230, 90, 0), settings.brightness);
+            let wave_in = Wave {
+                x: 0.5,
+                y: 0.5,
+                along_x: true,
+                along_y: true,
+                wavelength: 0.50,
+                inward: true,
+            };
+            let step = units(p * 0.40);
+            let (tr, _) = fade(gold_core, &[(gold_amber, step), (gold_core, step)]);
+            let mut effects = HashMap::new();
+            effects.insert(0, Effect::new(gold_core, tr, Some(wave_in)));
+            let keys = all_keys_matching(|| Key {
+                mode: MODE_EFFECT,
+                effect: 0,
+                ..Default::default()
+            });
             Scene { effects, keys }
         }
         "sonar" => {
-            let p = period(settings.speed, 5.0, 0.8);
+            // Concentric sonar ping expanding outwards from center
+            let p = period(settings.speed, 3.5, 0.5);
+            let ping_green = scale_color((0, 255, 120), settings.brightness);
+            let ping_dark = scale_color((0, 20, 10), settings.brightness);
             let wave_out = Wave {
                 x: 0.5,
                 y: 0.5,
                 along_x: true,
                 along_y: true,
-                wavelength: settings.wave_size,
+                wavelength: 0.20,
                 inward: false,
             };
-            let (effects, keys) = make_wave_palette(
-                &[(0, 255, 150), (0, 20, 10), (0, 20, 10)],
-                settings.brightness,
-                p,
-                wave_out,
-            );
+            let flash = units(p * 0.15);
+            let decay = units(p * 0.35);
+            let rest = units(p * 0.50);
+            let (tr, _) = fade(ping_dark, &[(ping_green, flash), (ping_dark, decay + rest)]);
+            let mut effects = HashMap::new();
+            effects.insert(0, Effect::new(ping_dark, tr, Some(wave_out)));
+            let keys = all_keys_matching(|| Key {
+                mode: MODE_EFFECT,
+                effect: 0,
+                ..Default::default()
+            });
             Scene { effects, keys }
         }
         "lavender" => {
-            let p = period(settings.speed, 9.0, 1.4);
-            let (effects, keys) = make_wave_palette(
-                &[(230, 230, 250), (147, 112, 219), (75, 0, 130)],
-                settings.brightness,
-                p,
-                get_wave(settings),
-            );
+            // Lavender fields: gentle swaying breeze across vertical columns
+            let p = period(settings.speed, 6.0, 1.0);
+            let lav_soft = scale_color((210, 180, 255), settings.brightness);
+            let lav_deep = scale_color((120, 60, 200), settings.brightness);
+            let step = units(p * 0.30);
+            let (tr0, _) = fade(lav_soft, &[(lav_deep, step), (lav_soft, step)]);
+            let (tr1, _) = fade(lav_deep, &[(lav_soft, step), (lav_deep, step)]);
+            let mut effects = HashMap::new();
+            effects.insert(0, Effect::new(lav_soft, tr0, None));
+            effects.insert(1, Effect::new(lav_deep, tr1, None));
+            let mut keys = HashMap::new();
+            for k in layout::get_keys() {
+                let slot = ((k.x as usize) / 3) % 2;
+                keys.insert(
+                    k.code,
+                    Key {
+                        mode: MODE_EFFECT,
+                        effect: slot as u8,
+                        ..Default::default()
+                    },
+                );
+            }
             Scene { effects, keys }
         }
         "inferno" => {
-            let p = period(settings.speed, 4.0, 0.6);
-            let (effects, keys) = make_wave_palette(
-                &[(255, 0, 40), (255, 90, 0), (80, 0, 0)],
-                settings.brightness,
-                p,
-                get_wave(settings),
+            // Raging hellfire: fast ascending wall of fire surging from spacebar upwards
+            let p = period(settings.speed, 2.5, 0.4);
+            let flame_red = scale_color((255, 0, 10), settings.brightness);
+            let flame_orange = scale_color((255, 100, 0), settings.brightness);
+            let flame_yellow = scale_color((255, 230, 0), settings.brightness);
+            let wave_up = Wave {
+                x: 0.5,
+                y: 1.0,
+                along_x: false,
+                along_y: true,
+                wavelength: 0.30,
+                inward: false,
+            };
+            let step = units(p * 0.15);
+            let (tr, _) = fade(
+                flame_red,
+                &[
+                    (flame_orange, step),
+                    (flame_yellow, step),
+                    (flame_red, step * 2),
+                ],
             );
+            let mut effects = HashMap::new();
+            effects.insert(0, Effect::new(flame_red, tr, Some(wave_up)));
+            let keys = all_keys_matching(|| Key {
+                mode: MODE_EFFECT,
+                effect: 0,
+                ..Default::default()
+            });
             Scene { effects, keys }
         }
         "cotton" => {
-            let p = period(settings.speed, 8.0, 1.2);
-            let (effects, keys) = make_wave_palette(
-                &[(255, 182, 193), (173, 216, 230), (255, 255, 255)],
-                settings.brightness,
-                p,
-                get_wave(settings),
-            );
+            // Cotton candy: alternating baby blue and bubblegum pink zones
+            let p = period(settings.speed, 6.0, 1.0);
+            let cotton_pink = scale_color((255, 140, 190), settings.brightness);
+            let cotton_blue = scale_color((120, 200, 255), settings.brightness);
+            let step = units(p * 0.40);
+            let (tr_p, _) = fade(cotton_pink, &[(cotton_blue, step), (cotton_pink, step)]);
+            let (tr_b, _) = fade(cotton_blue, &[(cotton_pink, step), (cotton_blue, step)]);
+            let mut effects = HashMap::new();
+            effects.insert(0, Effect::new(cotton_pink, tr_p, None));
+            effects.insert(1, Effect::new(cotton_blue, tr_b, None));
+            let mut keys = HashMap::new();
+            for k in layout::get_keys() {
+                let slot = if k.x < 10.0 { 0 } else { 1 };
+                keys.insert(
+                    k.code,
+                    Key {
+                        mode: MODE_EFFECT,
+                        effect: slot,
+                        ..Default::default()
+                    },
+                );
+            }
             Scene { effects, keys }
         }
         "citrus" => {
-            let p = period(settings.speed, 6.0, 0.9);
-            let (effects, keys) = make_wave_palette(
-                &[(255, 255, 0), (50, 205, 50), (255, 69, 0)],
-                settings.brightness,
-                p,
-                get_wave(settings),
+            // Zesty splash: sparkling lime and orange lemon bursts across numpad and letters
+            let p = period(settings.speed, 3.5, 0.5);
+            let c_lime = scale_color((120, 255, 0), settings.brightness);
+            let c_orange = scale_color((255, 110, 0), settings.brightness);
+            let c_lemon = scale_color((255, 235, 0), settings.brightness);
+            let step = units(p * 0.20);
+            let (tr0, _) = fade(c_lime, &[(c_lemon, step), (c_orange, step), (c_lime, step)]);
+            let (tr1, _) = fade(
+                c_orange,
+                &[(c_lime, step), (c_lemon, step), (c_orange, step)],
             );
+            let mut effects = HashMap::new();
+            effects.insert(0, Effect::new(c_lime, tr0, None));
+            effects.insert(1, Effect::new(c_orange, tr1, None));
+            let mut keys = HashMap::new();
+            for k in layout::get_keys() {
+                let slot = if (k.code % 3) == 0 { 1 } else { 0 };
+                keys.insert(
+                    k.code,
+                    Key {
+                        mode: MODE_EFFECT,
+                        effect: slot,
+                        ..Default::default()
+                    },
+                );
+            }
             Scene { effects, keys }
         }
         "monochrome" => {
-            let p = period(settings.speed, 7.0, 1.0);
-            let (effects, keys) = make_wave_palette(
-                &[(255, 255, 255), (100, 100, 100), (0, 0, 0)],
-                settings.brightness,
-                p,
-                get_wave(settings),
-            );
+            // Pure silver ripple: high-contrast monochrome sweep from pitch black to brilliant white
+            let p = period(settings.speed, 5.0, 0.8);
+            let silver = scale_color((255, 255, 255), settings.brightness);
+            let grey = scale_color((60, 60, 60), settings.brightness);
+            let step = units(p * 0.25);
+            let rest = units(p * 0.50);
+            let (tr, _) = fade(BLACK, &[(silver, step), (grey, step), (BLACK, rest)]);
+            let mut effects = HashMap::new();
+            effects.insert(0, Effect::new(BLACK, tr, Some(get_wave(settings))));
+            let keys = all_keys_matching(|| Key {
+                mode: MODE_EFFECT,
+                effect: 0,
+                ..Default::default()
+            });
             Scene { effects, keys }
         }
         "mirage" => {
-            let p = period(settings.speed, 8.5, 1.3);
-            let (effects, keys) = make_wave_palette(
-                &[(237, 201, 175), (255, 160, 40), (64, 224, 208)],
-                settings.brightness,
-                p,
-                get_wave(settings),
+            // Desert mirage: warm sand dunes with turquoise oasis pool in the center
+            let p = period(settings.speed, 7.0, 1.1);
+            let sand_gold = scale_color((255, 175, 50), settings.brightness);
+            let oasis_teal = scale_color((0, 230, 210), settings.brightness);
+            let step = units(p * 0.35);
+            let (tr_sand, _) = fade(
+                sand_gold,
+                &[
+                    (scale_color((200, 100, 20), settings.brightness), step),
+                    (sand_gold, step),
+                ],
             );
+            let (tr_oasis, _) = fade(
+                oasis_teal,
+                &[
+                    (scale_color((0, 160, 240), settings.brightness), step),
+                    (oasis_teal, step),
+                ],
+            );
+            let mut effects = HashMap::new();
+            effects.insert(0, Effect::new(sand_gold, tr_sand, None));
+            effects.insert(1, Effect::new(oasis_teal, tr_oasis, None));
+            let mut keys = HashMap::new();
+            for k in layout::get_keys() {
+                let slot = if k.x >= 6.0 && k.x <= 13.0 && k.y >= 2.0 && k.y <= 4.0 {
+                    1
+                } else {
+                    0
+                };
+                keys.insert(
+                    k.code,
+                    Key {
+                        mode: MODE_EFFECT,
+                        effect: slot,
+                        ..Default::default()
+                    },
+                );
+            }
             Scene { effects, keys }
         }
         "matrix" => {

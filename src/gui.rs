@@ -140,8 +140,55 @@ fn build_ui(app: &Application) {
     motion_group.add(&dir_row);
     content_box.append(&motion_group);
 
-    // 3. Color Swatches Palette
-    let color_group = PreferencesGroup::builder().title("Accent Palette").build();
+    // 3. Color Swatches Palette & Custom Color Chooser
+    let color_group = PreferencesGroup::builder()
+        .title("Color Customization")
+        .description("Choose preset swatches or open the color picker for any custom RGB value")
+        .build();
+
+    let init_rgb = settings::parse_color(&initial_settings.color).unwrap_or((0, 255, 160));
+    let init_rgba = gtk4::gdk::RGBA::new(
+        init_rgb.0 as f32 / 255.0,
+        init_rgb.1 as f32 / 255.0,
+        init_rgb.2 as f32 / 255.0,
+        1.0,
+    );
+
+    let color_dialog = gtk4::ColorDialog::builder()
+        .title("Select Custom Color")
+        .with_alpha(false)
+        .build();
+
+    let color_btn = gtk4::ColorDialogButton::builder()
+        .dialog(&color_dialog)
+        .rgba(&init_rgba)
+        .valign(gtk4::Align::Center)
+        .build();
+
+    let picker_row = ActionRow::builder()
+        .title("Custom Color Picker")
+        .subtitle("Click to pick any hex or RGB hue from the color spectrum")
+        .activatable_widget(&color_btn)
+        .build();
+    picker_row.add_suffix(&color_btn);
+
+    let st_picker = state.clone();
+    color_btn.connect_notify_local(Some("rgba"), move |btn, _| {
+        let rgba = btn.rgba();
+        let r = (rgba.red() * 255.0).round().clamp(0.0, 255.0) as u8;
+        let g = (rgba.green() * 255.0).round().clamp(0.0, 255.0) as u8;
+        let b = (rgba.blue() * 255.0).round().clamp(0.0, 255.0) as u8;
+        let hex = format!("#{:02x}{:02x}{:02x}", r, g, b);
+
+        let mut st = st_picker.lock().unwrap();
+        st.settings.color = hex;
+        let _ = settings::save(&st.settings, &st.config_path);
+        let s_copy = st.settings.clone();
+        thread::spawn(move || apply_hardware(&s_copy));
+    });
+
+    color_group.add(&picker_row);
+
     let flow = gtk4::FlowBox::builder()
         .selection_mode(gtk4::SelectionMode::None)
         .homogeneous(true)
@@ -156,6 +203,7 @@ fn build_ui(app: &Application) {
     for &(label, hex) in SWATCHES {
         let btn = gtk4::Button::with_label(label);
         let st_clone = state.clone();
+        let color_btn_ref = color_btn.clone();
         let hex_owned = hex.to_string();
         btn.connect_clicked(move |_| {
             let mut st = st_clone.lock().unwrap();
@@ -163,6 +211,16 @@ fn build_ui(app: &Application) {
             let _ = settings::save(&st.settings, &st.config_path);
             let s_copy = st.settings.clone();
             thread::spawn(move || apply_hardware(&s_copy));
+
+            if let Ok(rgb) = settings::parse_color(&hex_owned) {
+                let rgba = gtk4::gdk::RGBA::new(
+                    rgb.0 as f32 / 255.0,
+                    rgb.1 as f32 / 255.0,
+                    rgb.2 as f32 / 255.0,
+                    1.0,
+                );
+                color_btn_ref.set_rgba(&rgba);
+            }
         });
         flow.append(&btn);
     }
