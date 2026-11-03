@@ -46,6 +46,8 @@ pub fn get_keys() -> Vec<KeySpec> {
         (0x44, "F11"),
         (0x45, "F12"),
         (0x46, "PrtSc"),
+        (0x47, "ScrLk"),
+        (0x48, "Pause"),
         (0x49, "Ins"),
         (0x4C, "Del"),
         (0x4A, "Home"),
