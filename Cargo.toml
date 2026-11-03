@@ -3,9 +3,13 @@ name = "r-steelseries"
 version = "0.1.0"
 edition = "2021"
 authors = ["MikhaelCat"]
-description = "High-performance Rust driver and CLI for SteelSeries MSI RGB keyboards, lightbars, and dragon logos"
-license = "GPL-3.0-or-later"
+description = "High-performance Rust driver and CLI for SteelSeries / MSI RGB keyboards, lightbars, and dragon logos"
+license = "MIT OR Apache-2.0"
 repository = "https://github.com/MikhaelCat/r-steelseries.git"
+
+[[bin]]
+name = "rrgb"
+path = "src/main.rs"
 
 [dependencies]
 clap = { version = "4.5", features = ["derive", "cargo"] }

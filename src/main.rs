@@ -1,14 +1,14 @@
 use clap::{Parser, Subcommand};
 use std::process;
 
-use r_steelseries::device::{find_all_devices, MultiDeviceManager};
+use r_steelseries::device::{find_all_devices, list_all_hid_candidates, MultiDeviceManager};
 use r_steelseries::effects::{build_scene, EFFECTS};
 use r_steelseries::settings::{self, default_config_path, format_color, parse_color, DIRECTIONS};
 
 #[derive(Parser, Debug)]
-#[command(name = "r-steelseries", author = "MikhaelCat", version = "0.1.0")]
+#[command(name = "rrgb", author = "MikhaelCat", version = "0.1.0")]
 #[command(
-    about = "Blazing-fast Rust controller for MSI SteelSeries keyboards, lightbars, and dragon logos"
+    about = "Blazing-fast Rust controller for MSI / SteelSeries keyboards, lightbars, and dragon logos"
 )]
 struct Cli {
     #[command(subcommand)]
@@ -19,6 +19,8 @@ struct Cli {
 enum Commands {
     /// Show the detected devices and the saved settings
     Status,
+    /// Probe and diagnose all system HID devices to test keyboard detection
+    Check,
     /// List all available lighting effects
     Effects,
     /// Turn the lighting on
@@ -112,7 +114,8 @@ fn main() {
         None | Some(Commands::Status) => {
             let devs = find_all_devices();
             if devs.is_empty() {
-                println!("No SteelSeries KLC/ALC devices found!");
+                println!("No SteelSeries / MSI RGB controllers detected!");
+                println!("Hint: run 'rrgb check' to inspect all attached HID devices.");
             } else {
                 for d in devs {
                     println!(
@@ -126,7 +129,44 @@ fn main() {
             }
             describe(&current);
             if cli.command.is_none() {
-                println!("\nRun 'r-steelseries --help' for commands and options.");
+                println!("\nRun 'rrgb --help' for commands, or 'rrgb check' for diagnostics.");
+            }
+        }
+        Some(Commands::Check) => {
+            println!("=== rrgb Hardware Diagnostics ===");
+            let devs = find_all_devices();
+            if devs.is_empty() {
+                println!("[!] No active SteelSeries/MSI RGB controllers matched.");
+            } else {
+                println!("[+] Successfully matched {} RGB controller(s):", devs.len());
+                for d in &devs {
+                    println!(
+                        "    -> {} | VID: 0x{:04x}, PID: 0x{:04x} | Path: {}",
+                        d.name,
+                        d.vendor_id,
+                        d.product_id,
+                        d.path.display()
+                    );
+                }
+            }
+
+            println!("\n=== All System HID Candidates (/dev/hidraw*) ===");
+            let all = list_all_hid_candidates();
+            for (name, vid, pid, raw_id, path) in all {
+                let status = if devs.iter().any(|d| d.path == path) {
+                    "[MATCHED]"
+                } else {
+                    "[  SKIP  ]"
+                };
+                println!(
+                    "{} {} | ID: {:04x}:{:04x} ({}) at {}",
+                    status,
+                    name,
+                    vid,
+                    pid,
+                    raw_id,
+                    path.display()
+                );
             }
         }
         Some(Commands::Effects) => {
@@ -170,7 +210,7 @@ fn main() {
             let eff_match = EFFECTS.iter().find(|e| e.id == effect);
             if eff_match.is_none() {
                 eprintln!(
-                    "Unknown effect '{}'. Run 'r-steelseries effects' for a list.",
+                    "Unknown effect '{}'. Run 'rrgb effects' for a list.",
                     effect
                 );
                 process::exit(1);

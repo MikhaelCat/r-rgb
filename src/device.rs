@@ -10,8 +10,12 @@ use nix::ioctl_readwrite_bad;
 use crate::effects::Scene;
 use crate::protocol::{self, empty_effect_packet, refresh_packet, MAX_EFFECT_SLOTS};
 
-pub const VENDOR_ID: u16 = 0x1038;
 pub const REPORT_GAP: Duration = Duration::from_millis(5);
+
+// Known Vendor IDs:
+// 0x1038: SteelSeries ApS
+// 0x1770: MSI Micro Star International
+pub const KNOWN_VENDOR_IDS: &[u16] = &[0x1038, 0x1770];
 
 // HID IOC SFEATURE ioctl
 // Python definition: (3 << 30) | (length << 16) | (ord('H') << 8) | 0x06
@@ -25,10 +29,11 @@ ioctl_readwrite_bad!(
     [u8; protocol::FEATURE_SIZE]
 );
 
-pub const SUPPORTED_PIDS: &[(u16, &str)] = &[
-    (0x113A, "SteelSeries KLC"),
-    (0x1122, "SteelSeries KLC (MSI Keyboard)"),
-    (0x1161, "SteelSeries ALC (MSI Lightbar / Logo)"),
+pub const SUPPORTED_PIDS: &[(u16, u16, &str)] = &[
+    (0x1038, 0x113A, "SteelSeries KLC"),
+    (0x1038, 0x1122, "SteelSeries KLC (MSI Keyboard)"),
+    (0x1038, 0x1161, "SteelSeries ALC (MSI Lightbar / Logo)"),
+    (0x1770, 0xFF00, "MSI 3-Zone Gaming Keyboard"),
 ];
 
 #[derive(Debug, Clone)]
@@ -37,6 +42,47 @@ pub struct DeviceInfo {
     pub vendor_id: u16,
     pub product_id: u16,
     pub name: &'static str,
+}
+
+pub fn list_all_hid_candidates() -> Vec<(String, u16, u16, String, PathBuf)> {
+    let mut results = Vec::new();
+    let entries = match fs::read_dir("/sys/class/hidraw") {
+        Ok(e) => e,
+        Err(_) => return results,
+    };
+
+    let mut nodes: Vec<PathBuf> = entries.filter_map(|e| e.ok().map(|e| e.path())).collect();
+    nodes.sort();
+
+    for node in nodes {
+        let uevent_path = node.join("device").join("uevent");
+        let content = match fs::read_to_string(&uevent_path) {
+            Ok(c) => c,
+            Err(_) => continue,
+        };
+
+        let mut hid_id = None;
+        let mut name = "Unknown HID Device".to_string();
+        for line in content.lines() {
+            if let Some(val) = line.strip_prefix("HID_ID=") {
+                hid_id = Some(val.trim());
+            } else if let Some(n) = line.strip_prefix("HID_NAME=") {
+                name = n.trim().to_string();
+            }
+        }
+
+        if let Some(id_str) = hid_id {
+            let parts: Vec<&str> = id_str.split(':').collect();
+            if parts.len() == 3 {
+                let vid = u16::from_str_radix(parts[1], 16).unwrap_or(0);
+                let pid = u16::from_str_radix(parts[2], 16).unwrap_or(0);
+                let file_name = node.file_name().unwrap_or_default();
+                let dev_path = PathBuf::from("/dev").join(file_name);
+                results.push((name, vid, pid, id_str.to_string(), dev_path));
+            }
+        }
+    }
+    results
 }
 
 pub fn find_all_devices() -> Vec<DeviceInfo> {
@@ -60,10 +106,12 @@ pub fn find_all_devices() -> Vec<DeviceInfo> {
         };
 
         let mut hid_id = None;
+        let mut dev_name = "Generic HID Device".to_string();
         for line in content.lines() {
             if let Some(val) = line.strip_prefix("HID_ID=") {
                 hid_id = Some(val.trim());
-                break;
+            } else if let Some(n) = line.strip_prefix("HID_NAME=") {
+                dev_name = n.trim().to_string();
             }
         }
 
@@ -81,34 +129,49 @@ pub fn find_all_devices() -> Vec<DeviceInfo> {
             None => continue,
         };
 
-        if bus != 0x03 || vid != VENDOR_ID {
+        if bus != 0x03 {
             continue;
         }
 
-        let matched = SUPPORTED_PIDS.iter().find(|(p, _)| *p == pid);
-        if let Some((_, name)) = matched {
-            let real_dev = match fs::canonicalize(node.join("device")) {
-                Ok(p) => p,
-                Err(_) => continue,
-            };
-            let dev_str = real_dev.to_string_lossy();
-            let parent_ends_with_1_0 = dev_str
-                .split('/')
-                .rev()
-                .nth(1)
-                .map(|p| p.ends_with(":1.0"))
-                .unwrap_or(false);
+        let is_known = SUPPORTED_PIDS
+            .iter()
+            .find(|(v, p, _)| *v == vid && *p == pid);
+        let name_lower = dev_name.to_lowercase();
+        let is_steelseries_name = name_lower.contains("steelseries")
+            || name_lower.contains("klc")
+            || name_lower.contains("alc");
 
-            if parent_ends_with_1_0 {
-                let file_name = node.file_name().unwrap_or_default();
-                let dev_path = PathBuf::from("/dev").join(file_name);
-                devices.push(DeviceInfo {
-                    path: dev_path,
-                    vendor_id: vid,
-                    product_id: pid,
-                    name,
-                });
-            }
+        if is_known.is_none() && !KNOWN_VENDOR_IDS.contains(&vid) && !is_steelseries_name {
+            continue;
+        }
+
+        let resolved_name = if let Some((_, _, label)) = is_known {
+            *label
+        } else {
+            "SteelSeries / MSI Compatible Controller"
+        };
+
+        let real_dev = match fs::canonicalize(node.join("device")) {
+            Ok(p) => p,
+            Err(_) => continue,
+        };
+        let dev_str = real_dev.to_string_lossy();
+        let parent_ends_with_1_0 = dev_str
+            .split('/')
+            .rev()
+            .nth(1)
+            .map(|p| p.ends_with(":1.0"))
+            .unwrap_or(false);
+
+        if parent_ends_with_1_0 {
+            let file_name = node.file_name().unwrap_or_default();
+            let dev_path = PathBuf::from("/dev").join(file_name);
+            devices.push(DeviceInfo {
+                path: dev_path,
+                vendor_id: vid,
+                product_id: pid,
+                name: resolved_name,
+            });
         }
     }
 
@@ -207,7 +270,7 @@ impl MultiDeviceManager {
             "/tmp"
         };
         let lock_path = Path::new(lock_dir).join("keyglow.lock");
-        // Open read-only if it exists (sufficient for flock), or create if not present
+
         #[allow(deprecated)]
         let lock_file = OpenOptions::new()
             .read(true)

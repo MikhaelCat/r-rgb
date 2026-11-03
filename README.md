@@ -1,105 +1,153 @@
-# r-steelseries 🦀
+# rrgb 🦀
 
-Высокопроизводительный драйвер и CLI на **Rust** для управления RGB-подсветкой ноутбуков **MSI Raider 18 HX AI** (клавиатура SteelSeries KLC + передняя световая полоса и логотип дракона SteelSeries ALC).
+Высокопроизводительный драйвер и CLI на **Rust** с открытым исходным кодом (**MIT / Apache-2.0**) для управления подсветкой клавиатур, световых полос (Lightbar) и логотипов **SteelSeries / MSI Gaming Laptops** под Linux.
 
-Полностью переписан с Python (`keyglow` / `msi-perkeyrgb`) на **Rust** с сохранением и расширением функционала оригинального **SteelSeries Engine / GG**.
+Полная замена Python-утилит (`keyglow`, `msi-perkeyrgb`, `msiklm`) со скоростью отклика **2–5 миллисекунд** и встроенной аппаратной диагностикой.
 
 ---
 
 ## ⚡ Особенности
 
-- **Сверхбыстрый запуск:** Бинарник стартует и завершает отправку сцены в микроконтроллер за **2-5 мс** (в 30-50 раз быстрее Python-версии).
-- **Синхронный контроль двух контроллеров:** Одновременная отправка пакетов на `1038:1122` (клавиатура KLC) и `1038:1161` (полоса Lightbar и логотип дракона ALC).
-- **Аппаратные анимации:** Все эффекты рассчитываются и воспроизводятся самими чипами контроллеров SteelSeries — 0% нагрузки на CPU после применения.
-- **14 режимов подсветки:** Полный набор оригинальных пресетов SteelSeries (Fire, Aurora, Neon, Matrix, Police, Disco, Pulse и др.).
-- **Безопасность памяти:** Строгая типизация пакетов протокола HID, отсутствие segfaults, AddressSanitizer и строгий Clippy в CI.
+- **Двойная открытая лицензия:** Двойное лицензирование **MIT** или **Apache-2.0** — максимально свободный доступ для открытого сообщества и интеграции.
+- **Быстрая диагностика `rrgb check`:** Одной командой сканирует все HID-устройства системы, показывает, какие контроллеры распознаны, и выводит подробную информацию для моделей с нестандартными `VID:PID` (например, `1770:ff00` у более старых моделей MSI или `1038:1122`/`1038:1161` у новых).
+- **Синхронная работа контроллеров:** Управляет как клавиатурой (KLC), так и полосой/драконом (ALC) одновременно.
+- **14 аппаратных режимов:** Fire, Aurora Borealis, Neon Shift, Matrix Rain, Police Strobe, Pulse, Disco, Starlight, Rainbow, Breathing, Wave, Spectrum, Reactive, Static.
+- **0% CPU при работе:** Эффекты загружаются в контроллер и исполняются аппаратно.
 
 ---
 
-## 🚀 Установка и сборка
+## 🚀 Установка
 
+### 1. Сборка из исходников:
 ```bash
 git clone https://github.com/MikhaelCat/r-steelseries.git
 cd r-steelseries
 cargo build --release
 ```
 
-Скомпилированный бинарник будет находиться по пути:
-`target/release/r-steelseries`
+Бинарник появится в `target/release/rrgb`.
 
-Чтобы установить его в систему:
+### 2. Установка в систему:
 ```bash
-sudo cp target/release/r-steelseries /usr/local/bin/
+sudo cp target/release/rrgb /usr/local/bin/
 ```
+Теперь команда `rrgb` доступна из любого места в терминале.
 
 ---
 
-## 💻 Использование
+## 🔍 Диагностика оборудования (`rrgb check`)
 
-### Статус и проверка устройств
+Если у вас или другого пользователя ноутбук другой модели (или подсветка не реагирует), выполните:
 ```bash
-r-steelseries status
+rrgb check
 ```
 
-### Список всех эффектов
-```bash
-r-steelseries effects
+**Пример вывода:**
+```text
+=== rrgb Hardware Diagnostics ===
+[+] Successfully matched 2 RGB controller(s):
+    -> SteelSeries KLC (MSI Keyboard) | VID: 0x1038, PID: 0x1122 | Path: /dev/hidraw3
+    -> SteelSeries ALC (MSI Lightbar / Logo) | VID: 0x1038, PID: 0x1161 | Path: /dev/hidraw5
+
+=== All System HID Candidates (/dev/hidraw*) ===
+[MATCHED] SteelSeries SteelSeries KLC | ID: 1038:1122 at /dev/hidraw3
+[MATCHED] SteelSeries SteelSeries ALC | ID: 1038:1161 at /dev/hidraw5
+[  SKIP  ] Logitech M350              | ID: 046d:4080 at /dev/hidraw2
 ```
+Если ваше устройство отображается со статусом `[ SKIP ]`, его `VID:PID` можно сразу увидеть в списке и добавить в `SUPPORTED_PIDS` в файле `src/device.rs`.
 
-### Включение / выключение
-```bash
-r-steelseries off
-r-steelseries on
-```
+---
 
-### Примеры настройки эффектов
+## 💻 Справочник команд `rrgb`
 
-- **Огонь / Пламя (Fire):**
-  ```bash
-  r-steelseries set fire -s 50
-  ```
+### Базовые команды:
+- `rrgb check` — Полная диагностика клавиатуры и всех подключенных контроллеров.
+- `rrgb status` — Показать текущий режим подсветки и активные порты.
+- `rrgb effects` — Вывести список всех 14 доступных режимов с описанием.
+- `rrgb off` — Выключить подсветку.
+- `rrgb on` — Включить подсветку.
 
-- **Северное сияние (Aurora Borealis):**
-  ```bash
-  r-steelseries set aurora -s 40 -d right
-  ```
+---
 
-- **Неоновый Synthwave (Neon):**
-  ```bash
-  r-steelseries set neon -s 50 -d right
-  ```
+### Фирменные эффекты:
 
-- **Матрица (Matrix Rain):**
-  ```bash
-  r-steelseries set matrix -s 60
-  ```
+1. **Огонь / Пламя:**
+   ```bash
+   rrgb set fire -s 50
+   ```
+2. **Северное сияние:**
+   ```bash
+   rrgb set aurora -s 40 -d right
+   ```
+3. **Неоновый Киберпанк:**
+   ```bash
+   rrgb set neon -s 50 -d right
+   ```
+4. **Матрица:**
+   ```bash
+   rrgb set matrix -s 60
+   ```
+5. **Пульс / Кардиограмма:**
+   ```bash
+   rrgb set pulse -c ff0000 -s 40
+   ```
+6. **Полицейский стробоскоп:**
+   ```bash
+   rrgb set police -s 60
+   ```
+7. **Дискотека:**
+   ```bash
+   rrgb set disco -s 50
+   ```
+
+---
+
+### Классические режимы и цвета:
 
 - **Статичные цвета:**
   ```bash
-  r-steelseries set static -c ff0000   # Красный
-  r-steelseries set static -c 00ffff   # Бирюзовый
-  r-steelseries set static -c 8000ff   # Фиолетовый
+  rrgb set static -c ff0000   # Красный
+  rrgb set static -c 00ffff   # Бирюзовый
+  rrgb set static -c 0000ff   # Синий
+  rrgb set static -c ffffff   # Белый
+  rrgb set static -c 8000ff   # Фиолетовый
   ```
-
-- **Радуга (Rainbow Wave):**
+- **Радужная волна:**
   ```bash
-  r-steelseries set rainbow -s 50 -d right
+  rrgb set rainbow -s 50 -d right
+  ```
+- **Плавный перелив спектра:**
+  ```bash
+  rrgb set spectrum -s 40
+  ```
+- **Дыхание:**
+  ```bash
+  rrgb set breathing -c 00ffff -s 30
+  ```
+- **Звёздное небо:**
+  ```bash
+  rrgb set starlight -c ffffff -s 50
+  ```
+- **Реакция на нажатия:**
+  ```bash
+  rrgb set reactive -c 001133 --highlight ffffff
   ```
 
 ---
 
-## 🧪 Тестирование, CI и бенчмарки
+## ⚙️ Флаги и параметры
 
-- **Запуск тестов:**
-  ```bash
-  cargo test
-  ```
-- **Запуск бенчмарков:**
-  ```bash
-  cargo bench
-  ```
-- **Проверка форматирования и линтера:**
-  ```bash
-  cargo fmt --all -- --check
-  cargo clippy --all-targets -- -D warnings
-  ```
+| Флаг | Значение | Диапазон / Пример |
+|---|---|---|
+| `-c`, `--color` | Основной цвет | HEX (`ff0000`, `00ffff`) |
+| `--highlight` | Цвет нажатия для `reactive` | HEX (`ffffff`) |
+| `-s`, `--speed` | Скорость эффекта | от `0` до `100` |
+| `-b`, `--brightness` | Яркость | от `0` до `100` |
+| `-d`, `--direction` | Направление волны | `right`, `left`, `up`, `down`, `out`, `in` |
+| `--wave-size` | Ширина волны | от `0` до `100` |
+
+---
+
+## 📜 Лицензия
+
+Проект распространяется под двойной открытой лицензией **MIT OR Apache-2.0** по вашему выбору (см. файлы `LICENSE-MIT` и `LICENSE-APACHE`).
