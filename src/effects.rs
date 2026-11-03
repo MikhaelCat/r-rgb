@@ -26,7 +26,7 @@ pub const EFFECTS: &[EffectInfo] = &[
     EffectInfo {
         id: "static",
         name: "Static",
-        description: "One steady color",
+        description: "Solid static color across all keys and lightbars",
         uses_color: true,
         uses_highlight: false,
         uses_speed: false,
@@ -35,7 +35,7 @@ pub const EFFECTS: &[EffectInfo] = &[
     EffectInfo {
         id: "breathing",
         name: "Breathing",
-        description: "Slowly fades in and out",
+        description: "Smooth breathing pulse of the chosen color",
         uses_color: true,
         uses_highlight: false,
         uses_speed: true,
@@ -44,7 +44,7 @@ pub const EFFECTS: &[EffectInfo] = &[
     EffectInfo {
         id: "spectrum",
         name: "Color Cycle",
-        description: "All keys cycle through the rainbow",
+        description: "Synchronized chromatic rainbow cycle across all LEDs",
         uses_color: false,
         uses_highlight: false,
         uses_speed: true,
@@ -53,7 +53,7 @@ pub const EFFECTS: &[EffectInfo] = &[
     EffectInfo {
         id: "rainbow",
         name: "Rainbow Wave",
-        description: "A rainbow that flows across the keys",
+        description: "Continuous spectrum wave propagating across zones",
         uses_color: false,
         uses_highlight: false,
         uses_speed: true,
@@ -62,7 +62,7 @@ pub const EFFECTS: &[EffectInfo] = &[
     EffectInfo {
         id: "wave",
         name: "Color Wave",
-        description: "Pulses of color sweeping across the keys",
+        description: "Unidirectional sweeping pulse of custom color",
         uses_color: true,
         uses_highlight: false,
         uses_speed: true,
@@ -71,7 +71,7 @@ pub const EFFECTS: &[EffectInfo] = &[
     EffectInfo {
         id: "starlight",
         name: "Starlight",
-        description: "Keys twinkle at random",
+        description: "Gentle random twinkling stars in deep space",
         uses_color: true,
         uses_highlight: false,
         uses_speed: true,
@@ -80,25 +80,16 @@ pub const EFFECTS: &[EffectInfo] = &[
     EffectInfo {
         id: "reactive",
         name: "Reactive",
-        description: "Keys light up as you type",
+        description: "Keys illuminate dynamically upon keystrokes",
         uses_color: true,
         uses_highlight: true,
         uses_speed: true,
         uses_direction: false,
     },
     EffectInfo {
-        id: "disco",
-        name: "Disco",
-        description: "Vibrant shifting dance party colors",
-        uses_color: false,
-        uses_highlight: false,
-        uses_speed: true,
-        uses_direction: false,
-    },
-    EffectInfo {
         id: "fire",
-        name: "Fire",
-        description: "Flickering flames of red, orange and yellow",
+        name: "Fireplace",
+        description: "Warm flickering embers and rising fire flames",
         uses_color: false,
         uses_highlight: false,
         uses_speed: true,
@@ -107,7 +98,7 @@ pub const EFFECTS: &[EffectInfo] = &[
     EffectInfo {
         id: "aurora",
         name: "Aurora Borealis",
-        description: "Mystic northern lights in cyan, green and violet",
+        description: "Mystic ethereal northern lights in cyan, green and purple",
         uses_color: false,
         uses_highlight: false,
         uses_speed: true,
@@ -115,17 +106,80 @@ pub const EFFECTS: &[EffectInfo] = &[
     },
     EffectInfo {
         id: "neon",
-        name: "Neon Shift",
-        description: "Synthwave vibe alternating magenta and cyan",
+        name: "Synthwave Neon",
+        description: "Retro 80s outrun wave transitioning hot pink to cyan",
         uses_color: false,
         uses_highlight: false,
         uses_speed: true,
         uses_direction: true,
     },
     EffectInfo {
+        id: "matrix",
+        name: "Matrix Rain",
+        description: "Iconic digital cyber glyph rain descending downwards",
+        uses_color: false,
+        uses_highlight: false,
+        uses_speed: true,
+        uses_direction: true,
+    },
+    EffectInfo {
+        id: "cyberpunk",
+        name: "Cyberpunk 2077",
+        description: "Electrifying contrast of cyber yellow and neon cyan",
+        uses_color: false,
+        uses_highlight: false,
+        uses_speed: true,
+        uses_direction: true,
+    },
+    EffectInfo {
+        id: "vaporwave",
+        name: "Vaporwave",
+        description: "Dreamy nostalgic pastel gradients of violet and peach",
+        uses_color: false,
+        uses_highlight: false,
+        uses_speed: true,
+        uses_direction: true,
+    },
+    EffectInfo {
+        id: "ocean",
+        name: "Deep Ocean",
+        description: "Underwater sea depth swell transitioning aquamarine to sapphire",
+        uses_color: false,
+        uses_highlight: false,
+        uses_speed: true,
+        uses_direction: true,
+    },
+    EffectInfo {
+        id: "sunset",
+        name: "Miami Sunset",
+        description: "Vibrant tropical gradient of ruby red, tangerine and violet",
+        uses_color: false,
+        uses_highlight: false,
+        uses_speed: true,
+        uses_direction: true,
+    },
+    EffectInfo {
+        id: "magma",
+        name: "Volcanic Magma",
+        description: "Molten volcanic lava glow slowly rolling across the chassis",
+        uses_color: false,
+        uses_highlight: false,
+        uses_speed: true,
+        uses_direction: true,
+    },
+    EffectInfo {
+        id: "glitch",
+        name: "Glitch Shift",
+        description: "Jittery chromatic cyber distortion across split clusters",
+        uses_color: false,
+        uses_highlight: false,
+        uses_speed: true,
+        uses_direction: false,
+    },
+    EffectInfo {
         id: "police",
-        name: "Police",
-        description: "Emergency alternating red and blue strobe",
+        name: "Emergency Strobe",
+        description: "Tactical alternating high-frequency red/blue strobe",
         uses_color: false,
         uses_highlight: false,
         uses_speed: true,
@@ -134,20 +188,20 @@ pub const EFFECTS: &[EffectInfo] = &[
     EffectInfo {
         id: "pulse",
         name: "Heartbeat Pulse",
-        description: "Sharp double-pulse of color",
+        description: "Cardiogram double pulse with sharp decay",
         uses_color: true,
         uses_highlight: false,
         uses_speed: true,
         uses_direction: false,
     },
     EffectInfo {
-        id: "matrix",
-        name: "Matrix Rain",
-        description: "Green cyber data rain falling down",
+        id: "disco",
+        name: "Disco Party",
+        description: "High-energy multi-zone club strobe dance floor",
         uses_color: false,
         uses_highlight: false,
         uses_speed: true,
-        uses_direction: true,
+        uses_direction: false,
     },
 ];
 
@@ -362,28 +416,44 @@ pub fn build_scene(settings: &Settings) -> Scene {
             }
             Scene { effects, keys }
         }
-        "pulse" => {
-            let p = period(settings.speed, 4.0, 0.8);
-            let up1 = units(p * 0.12);
-            let down1 = units(p * 0.15);
-            let up2 = units(p * 0.10);
-            let down2 = units(p * 0.20);
-            let rest = units(p * 0.43);
-            let frames = &[
-                (color, up1),
-                (BLACK, down1),
-                (color, up2),
-                (BLACK, down2),
-                (BLACK, rest),
+        "fire" => {
+            let p = period(settings.speed, 3.5, 0.7);
+            let colors = [
+                (255, 20, 0),
+                (255, 80, 0),
+                (255, 160, 0),
+                (255, 230, 20),
+                (200, 10, 0),
+                (255, 110, 0),
+                (255, 200, 10),
+                (180, 5, 0),
             ];
-            let (transitions, _) = fade(BLACK, frames);
+            let step = units(p / 4.0);
             let mut effects = HashMap::new();
-            effects.insert(0, Effect::new(BLACK, transitions, None));
-            let keys = all_keys_matching(|| Key {
-                mode: MODE_EFFECT,
-                effect: 0,
-                ..Default::default()
-            });
+            for slot in 0..STAR_SLOTS {
+                let ca = scale_color(colors[slot % colors.len()], settings.brightness);
+                let cb = scale_color(colors[(slot + 2) % colors.len()], settings.brightness);
+                let cc = scale_color(colors[(slot + 4) % colors.len()], settings.brightness);
+                let frames = &[(cb, step), (cc, step), (ca, step * 2)];
+                let (transitions, _) = fade(ca, frames);
+                effects.insert(slot as u8, Effect::new(ca, transitions, None));
+            }
+
+            let mut codes: Vec<u8> = layout::get_keys().iter().map(|k| k.code).collect();
+            let mut rng = rand::rngs::StdRng::seed_from_u64(42);
+            codes.shuffle(&mut rng);
+
+            let mut keys = HashMap::new();
+            for (i, code) in codes.into_iter().enumerate() {
+                keys.insert(
+                    code,
+                    Key {
+                        mode: MODE_EFFECT,
+                        effect: (i % STAR_SLOTS) as u8,
+                        ..Default::default()
+                    },
+                );
+            }
             Scene { effects, keys }
         }
         "aurora" => {
@@ -431,80 +501,179 @@ pub fn build_scene(settings: &Settings) -> Scene {
             });
             Scene { effects, keys }
         }
-        "fire" => {
-            let p = period(settings.speed, 3.5, 0.7);
-            let colors = [
-                (255, 20, 0),
-                (255, 80, 0),
-                (255, 160, 0),
-                (255, 230, 20),
-                (200, 10, 0),
-                (255, 110, 0),
-                (255, 200, 10),
-                (180, 5, 0),
+        "matrix" => {
+            let p = period(settings.speed, 6.0, 1.0);
+            let wave_down = Wave {
+                x: 0.5,
+                y: 0.0,
+                along_x: false,
+                along_y: true,
+                wavelength: settings.wave_size,
+                inward: false,
+            };
+            let g_bright = scale_color((0, 255, 70), settings.brightness);
+            let g_dark = scale_color((0, 40, 10), settings.brightness);
+            let frames = &[
+                (g_bright, units(p * 0.15)),
+                (g_dark, units(p * 0.45)),
+                (BLACK, units(p * 0.40)),
             ];
-            let step = units(p / 4.0);
+            let (transitions, _) = fade(BLACK, frames);
+            let eff = Effect::new(BLACK, transitions, Some(wave_down));
             let mut effects = HashMap::new();
-            for slot in 0..STAR_SLOTS {
-                let ca = scale_color(colors[slot % colors.len()], settings.brightness);
-                let cb = scale_color(colors[(slot + 2) % colors.len()], settings.brightness);
-                let cc = scale_color(colors[(slot + 4) % colors.len()], settings.brightness);
-                let frames = &[(cb, step), (cc, step), (ca, step * 2)];
-                let (transitions, _) = fade(ca, frames);
-                effects.insert(slot as u8, Effect::new(ca, transitions, None));
-            }
-
-            let mut codes: Vec<u8> = layout::get_keys().iter().map(|k| k.code).collect();
-            let mut rng = rand::rngs::StdRng::seed_from_u64(42);
-            codes.shuffle(&mut rng);
-
-            let mut keys = HashMap::new();
-            for (i, code) in codes.into_iter().enumerate() {
-                keys.insert(
-                    code,
-                    Key {
-                        mode: MODE_EFFECT,
-                        effect: (i % STAR_SLOTS) as u8,
-                        ..Default::default()
-                    },
-                );
-            }
+            effects.insert(0, eff);
+            let keys = all_keys_matching(|| Key {
+                mode: MODE_EFFECT,
+                effect: 0,
+                ..Default::default()
+            });
             Scene { effects, keys }
         }
-        "disco" => {
-            let p = period(settings.speed, 4.0, 0.8);
-            let palette = [
-                (255, 0, 100),
-                (0, 255, 150),
-                (255, 220, 0),
-                (0, 150, 255),
-                (255, 0, 255),
-                (0, 255, 255),
-                (255, 120, 0),
-                (120, 0, 255),
-            ];
+        "cyberpunk" => {
+            let p = period(settings.speed, 7.0, 1.0);
             let step = units(p / 4.0);
+            let c_yellow = scale_color((255, 235, 0), settings.brightness);
+            let c_cyan = scale_color((0, 240, 255), settings.brightness);
+            let c_amber = scale_color((255, 90, 0), settings.brightness);
+            let frames = &[
+                (c_cyan, step),
+                (c_amber, step),
+                (c_cyan, step),
+                (c_yellow, step),
+            ];
+            let (transitions, _) = fade(c_yellow, frames);
+            let eff = Effect::new(c_yellow, transitions, Some(get_wave(settings)));
             let mut effects = HashMap::new();
-            for slot in 0..STAR_SLOTS {
-                let ca = scale_color(palette[slot % palette.len()], settings.brightness);
-                let cb = scale_color(palette[(slot + 3) % palette.len()], settings.brightness);
-                let cc = scale_color(palette[(slot + 5) % palette.len()], settings.brightness);
-                let frames = &[(cb, step), (cc, step), (ca, step * 2)];
-                let (transitions, _) = fade(ca, frames);
-                effects.insert(slot as u8, Effect::new(ca, transitions, None));
+            effects.insert(0, eff);
+            let keys = all_keys_matching(|| Key {
+                mode: MODE_EFFECT,
+                effect: 0,
+                ..Default::default()
+            });
+            Scene { effects, keys }
+        }
+        "vaporwave" => {
+            let p = period(settings.speed, 10.0, 1.5);
+            let step = units(p / 4.0);
+            let c_pink = scale_color((255, 113, 206), settings.brightness);
+            let c_blue = scale_color((1, 205, 254), settings.brightness);
+            let c_green = scale_color((5, 255, 161), settings.brightness);
+            let c_purple = scale_color((185, 103, 255), settings.brightness);
+            let frames = &[
+                (c_blue, step),
+                (c_green, step),
+                (c_purple, step),
+                (c_pink, step),
+            ];
+            let (transitions, _) = fade(c_pink, frames);
+            let eff = Effect::new(c_pink, transitions, Some(get_wave(settings)));
+            let mut effects = HashMap::new();
+            effects.insert(0, eff);
+            let keys = all_keys_matching(|| Key {
+                mode: MODE_EFFECT,
+                effect: 0,
+                ..Default::default()
+            });
+            Scene { effects, keys }
+        }
+        "ocean" => {
+            let p = period(settings.speed, 9.0, 1.3);
+            let step = units(p / 4.0);
+            let c_teal = scale_color((0, 210, 190), settings.brightness);
+            let c_deep = scale_color((0, 50, 180), settings.brightness);
+            let c_aqua = scale_color((0, 160, 255), settings.brightness);
+            let frames = &[
+                (c_deep, step),
+                (c_aqua, step),
+                (c_deep, step),
+                (c_teal, step),
+            ];
+            let (transitions, _) = fade(c_teal, frames);
+            let eff = Effect::new(c_teal, transitions, Some(get_wave(settings)));
+            let mut effects = HashMap::new();
+            effects.insert(0, eff);
+            let keys = all_keys_matching(|| Key {
+                mode: MODE_EFFECT,
+                effect: 0,
+                ..Default::default()
+            });
+            Scene { effects, keys }
+        }
+        "sunset" => {
+            let p = period(settings.speed, 8.0, 1.2);
+            let step = units(p / 4.0);
+            let c_orange = scale_color((255, 60, 0), settings.brightness);
+            let c_rose = scale_color((255, 0, 120), settings.brightness);
+            let c_gold = scale_color((255, 170, 0), settings.brightness);
+            let c_purple = scale_color((120, 0, 160), settings.brightness);
+            let frames = &[
+                (c_rose, step),
+                (c_purple, step),
+                (c_gold, step),
+                (c_orange, step),
+            ];
+            let (transitions, _) = fade(c_orange, frames);
+            let eff = Effect::new(c_orange, transitions, Some(get_wave(settings)));
+            let mut effects = HashMap::new();
+            effects.insert(0, eff);
+            let keys = all_keys_matching(|| Key {
+                mode: MODE_EFFECT,
+                effect: 0,
+                ..Default::default()
+            });
+            Scene { effects, keys }
+        }
+        "magma" => {
+            let p = period(settings.speed, 7.0, 1.1);
+            let step = units(p / 4.0);
+            let c_crust = scale_color((40, 0, 0), settings.brightness);
+            let c_glow = scale_color((255, 40, 0), settings.brightness);
+            let c_fire = scale_color((255, 140, 0), settings.brightness);
+            let frames = &[
+                (c_glow, step),
+                (c_fire, step),
+                (c_glow, step),
+                (c_crust, step),
+            ];
+            let (transitions, _) = fade(c_crust, frames);
+            let eff = Effect::new(c_crust, transitions, Some(get_wave(settings)));
+            let mut effects = HashMap::new();
+            effects.insert(0, eff);
+            let keys = all_keys_matching(|| Key {
+                mode: MODE_EFFECT,
+                effect: 0,
+                ..Default::default()
+            });
+            Scene { effects, keys }
+        }
+        "glitch" => {
+            let p = period(settings.speed, 3.0, 0.4);
+            let step = units(p * 0.12);
+            let pause = units(p * 0.4);
+            let mut effects = HashMap::new();
+
+            let palette = [
+                scale_color((255, 0, 80), settings.brightness),
+                scale_color((0, 255, 240), settings.brightness),
+                scale_color((255, 255, 255), settings.brightness),
+                BLACK,
+            ];
+
+            for slot in 0..4 {
+                let col = palette[slot];
+                let frames = &[(col, step), (BLACK, step), (col, step), (BLACK, pause)];
+                let (transitions, _) = fade(BLACK, frames);
+                effects.insert(slot as u8, Effect::new(BLACK, transitions, None));
             }
 
-            let mut codes: Vec<u8> = layout::get_keys().iter().map(|k| k.code).collect();
-            let mut rng = rand::rngs::StdRng::seed_from_u64(13);
-            codes.shuffle(&mut rng);
-
             let mut keys = HashMap::new();
-            for (i, code) in codes.into_iter().enumerate() {
+            for k in layout::get_keys() {
+                let slot = ((k.code as usize) ^ (k.x as usize)) % 4;
                 keys.insert(
-                    code,
+                    k.code,
                     Key {
                         mode: MODE_EFFECT,
-                        effect: (i % STAR_SLOTS) as u8,
+                        effect: slot as u8,
                         ..Default::default()
                     },
                 );
@@ -559,27 +728,23 @@ pub fn build_scene(settings: &Settings) -> Scene {
             }
             Scene { effects, keys }
         }
-        "matrix" => {
-            let p = period(settings.speed, 6.0, 1.0);
-            let wave_down = Wave {
-                x: 0.5,
-                y: 0.0,
-                along_x: false,
-                along_y: true,
-                wavelength: settings.wave_size,
-                inward: false,
-            };
-            let g_bright = scale_color((0, 255, 70), settings.brightness);
-            let g_dark = scale_color((0, 40, 10), settings.brightness);
+        "pulse" => {
+            let p = period(settings.speed, 4.0, 0.8);
+            let up1 = units(p * 0.12);
+            let down1 = units(p * 0.15);
+            let up2 = units(p * 0.10);
+            let down2 = units(p * 0.20);
+            let rest = units(p * 0.43);
             let frames = &[
-                (g_bright, units(p * 0.15)),
-                (g_dark, units(p * 0.45)),
-                (BLACK, units(p * 0.40)),
+                (color, up1),
+                (BLACK, down1),
+                (color, up2),
+                (BLACK, down2),
+                (BLACK, rest),
             ];
             let (transitions, _) = fade(BLACK, frames);
-            let eff = Effect::new(BLACK, transitions, Some(wave_down));
             let mut effects = HashMap::new();
-            effects.insert(0, eff);
+            effects.insert(0, Effect::new(BLACK, transitions, None));
             let keys = all_keys_matching(|| Key {
                 mode: MODE_EFFECT,
                 effect: 0,
@@ -587,8 +752,47 @@ pub fn build_scene(settings: &Settings) -> Scene {
             });
             Scene { effects, keys }
         }
+        "disco" => {
+            let p = period(settings.speed, 4.0, 0.8);
+            let palette = [
+                (255, 0, 100),
+                (0, 255, 150),
+                (255, 220, 0),
+                (0, 150, 255),
+                (255, 0, 255),
+                (0, 255, 255),
+                (255, 120, 0),
+                (120, 0, 255),
+            ];
+            let step = units(p / 4.0);
+            let mut effects = HashMap::new();
+            for slot in 0..STAR_SLOTS {
+                let ca = scale_color(palette[slot % palette.len()], settings.brightness);
+                let cb = scale_color(palette[(slot + 3) % palette.len()], settings.brightness);
+                let cc = scale_color(palette[(slot + 5) % palette.len()], settings.brightness);
+                let frames = &[(cb, step), (cc, step), (ca, step * 2)];
+                let (transitions, _) = fade(ca, frames);
+                effects.insert(slot as u8, Effect::new(ca, transitions, None));
+            }
+
+            let mut codes: Vec<u8> = layout::get_keys().iter().map(|k| k.code).collect();
+            let mut rng = rand::rngs::StdRng::seed_from_u64(13);
+            codes.shuffle(&mut rng);
+
+            let mut keys = HashMap::new();
+            for (i, code) in codes.into_iter().enumerate() {
+                keys.insert(
+                    code,
+                    Key {
+                        mode: MODE_EFFECT,
+                        effect: (i % STAR_SLOTS) as u8,
+                        ..Default::default()
+                    },
+                );
+            }
+            Scene { effects, keys }
+        }
         _ => {
-            // Default to static
             let keys = all_keys_matching(|| Key {
                 color,
                 mode: protocol::MODE_STATIC,

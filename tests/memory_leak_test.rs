@@ -5,8 +5,20 @@ use r_steelseries::settings::Settings;
 #[test]
 fn test_loop_memory_stability() {
     let effects = [
-        "static", "breathing", "spectrum", "rainbow", "wave", "starlight",
-        "reactive", "disco", "fire", "aurora", "neon", "police", "pulse", "matrix",
+        "static",
+        "breathing",
+        "spectrum",
+        "rainbow",
+        "wave",
+        "starlight",
+        "reactive",
+        "disco",
+        "fire",
+        "aurora",
+        "neon",
+        "police",
+        "pulse",
+        "matrix",
     ];
 
     // Simulate 20,000 scene generations and packet serializations
