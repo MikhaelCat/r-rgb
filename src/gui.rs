@@ -5,7 +5,7 @@ use gtk4::glib;
 use gtk4::prelude::*;
 use libadwaita::prelude::*;
 use libadwaita::{
-    ActionRow, Application, ApplicationWindow, HeaderBar, PreferencesGroup, SwitchRow,
+    ActionRow, Application, ApplicationWindow, ExpanderRow, HeaderBar, PreferencesGroup, SwitchRow,
 };
 
 use crate::device::MultiDeviceManager;
@@ -169,7 +169,7 @@ fn build_ui(app: &Application) {
     color_group.add(&flow);
     content_box.append(&color_group);
 
-    // 4. Categorized Hardware Animation Presets (All 50 Presets)
+    // 4. Categorized Hardware Animation Presets (All 50 Presets in Collapsible Groups)
     let categories = [
         ("Core", "Classics and Fundamentals"),
         ("Sci-Fi", "Cyberpunk, Sci-Fi and Digital"),
@@ -179,6 +179,11 @@ fn build_ui(app: &Application) {
         ("Tactical", "Tactical, Action and Dynamic"),
         ("Harmonies", "Exotic Chromatic Harmonies"),
     ];
+
+    let presets_group = PreferencesGroup::builder()
+        .title("Hardware Animation Profiles (50)")
+        .description("Hardware-offloaded profiles executed directly on the onboard MCU")
+        .build();
 
     let mut first_check: Option<gtk4::CheckButton> = None;
 
@@ -190,9 +195,12 @@ fn build_ui(app: &Application) {
             continue;
         }
 
-        let cat_group = PreferencesGroup::builder()
-            .title(format!("{} ({})", cat_name, cat_effects.len()))
-            .description(cat_desc)
+        let contains_active = cat_effects.iter().any(|e| e.id == initial_settings.effect);
+
+        let expander = ExpanderRow::builder()
+            .title(format!("{} ({} presets)", cat_name, cat_effects.len()))
+            .subtitle(cat_desc)
+            .expanded(contains_active)
             .build();
 
         for eff in cat_effects {
@@ -228,11 +236,13 @@ fn build_ui(app: &Application) {
                 }
             });
 
-            cat_group.add(&row);
+            expander.add_row(&row);
         }
 
-        content_box.append(&cat_group);
+        presets_group.add(&expander);
     }
+
+    content_box.append(&presets_group);
 
     // Event Bindings
     let st_power = state.clone();
