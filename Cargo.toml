@@ -1,11 +1,11 @@
 [package]
-name = "r-steelseries"
+name = "r-rgb"
 version = "0.1.0"
 edition = "2021"
 authors = ["MikhaelCat"]
-description = "High-performance Rust driver and CLI for SteelSeries / MSI RGB keyboards, lightbars, and dragon logos"
+description = "High-performance Rust driver and Adwaita GUI for Linux RGB keyboards, lightbars, and dragon logos"
 license = "MIT OR Apache-2.0"
-repository = "https://github.com/MikhaelCat/r-steelseries.git"
+repository = "https://github.com/MikhaelCat/r-rgb.git"
 
 [[bin]]
 name = "rrgb"

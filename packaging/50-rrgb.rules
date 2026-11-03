@@ -1,7 +1,7 @@
-# SteelSeries KLC Keyboard
+# KLC Keyboard
 SUBSYSTEM=="hidraw", ATTRS{idVendor}=="1038", ATTRS{idProduct}=="1122", MODE="0666", GROUP="users", TAG+="systemd", ENV{SYSTEMD_WANTS}+="rrgb-restore.service"
 SUBSYSTEM=="hidraw", ATTRS{idVendor}=="1038", ATTRS{idProduct}=="113a", MODE="0666", GROUP="users", TAG+="systemd", ENV{SYSTEMD_WANTS}+="rrgb-restore.service"
-# SteelSeries ALC Lightbar / Logo
+# ALC Lightbar / Logo
 SUBSYSTEM=="hidraw", ATTRS{idVendor}=="1038", ATTRS{idProduct}=="1161", MODE="0666", GROUP="users", TAG+="systemd", ENV{SYSTEMD_WANTS}+="rrgb-restore.service"
 # MSI 3-Zone
 SUBSYSTEM=="hidraw", ATTRS{idVendor}=="1770", ATTRS{idProduct}=="ff00", MODE="0666", GROUP="users", TAG+="systemd", ENV{SYSTEMD_WANTS}+="rrgb-restore.service"

@@ -1,6 +1,6 @@
-use r_steelseries::build_scene;
-use r_steelseries::protocol::{empty_effect_packet, key_packets, refresh_packet};
-use r_steelseries::settings::Settings;
+use r_rgb::build_scene;
+use r_rgb::protocol::{empty_effect_packet, key_packets, refresh_packet};
+use r_rgb::settings::Settings;
 
 #[test]
 fn test_loop_memory_stability() {

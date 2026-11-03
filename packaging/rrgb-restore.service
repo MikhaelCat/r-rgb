@@ -1,6 +1,6 @@
 [Unit]
 Description=Restore rrgb keyboard & lightbar lighting on boot and resume
-Documentation=https://github.com/MikhaelCat/r-steelseries
+Documentation=https://github.com/MikhaelCat/r-rgb
 After=suspend.target hibernate.target hybrid-sleep.target suspend-then-hibernate.target
 
 [Service]

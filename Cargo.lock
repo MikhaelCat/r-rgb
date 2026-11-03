@@ -888,7 +888,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "r-steelseries"
+name = "r-rgb"
 version = "0.1.0"
 dependencies = [
  "clap",

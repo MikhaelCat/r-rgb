@@ -13,7 +13,7 @@ use crate::protocol::{self, empty_effect_packet, refresh_packet, MAX_EFFECT_SLOT
 pub const REPORT_GAP: Duration = Duration::from_millis(5);
 
 // Known Vendor IDs:
-// 0x1038: SteelSeries ApS
+// 0x1038: Hardware Controller VID
 // 0x1770: MSI Micro Star International
 pub const KNOWN_VENDOR_IDS: &[u16] = &[0x1038, 0x1770];
 
@@ -30,9 +30,9 @@ ioctl_readwrite_bad!(
 );
 
 pub const SUPPORTED_PIDS: &[(u16, u16, &str)] = &[
-    (0x1038, 0x113A, "SteelSeries KLC"),
-    (0x1038, 0x1122, "SteelSeries KLC (MSI Keyboard)"),
-    (0x1038, 0x1161, "SteelSeries ALC (MSI Lightbar / Logo)"),
+    (0x1038, 0x113A, "Per-Key RGB Keyboard"),
+    (0x1038, 0x1122, "Per-Key RGB Keyboard (MSI)"),
+    (0x1038, 0x1161, "Front Lightbar / Logo (MSI)"),
     (0x1770, 0xFF00, "MSI 3-Zone Gaming Keyboard"),
 ];
 
@@ -137,18 +137,19 @@ pub fn find_all_devices() -> Vec<DeviceInfo> {
             .iter()
             .find(|(v, p, _)| *v == vid && *p == pid);
         let name_lower = dev_name.to_lowercase();
-        let is_steelseries_name = name_lower.contains("steelseries")
+        let is_rgb_name = name_lower.contains("keyboard")
             || name_lower.contains("klc")
-            || name_lower.contains("alc");
+            || name_lower.contains("alc")
+            || name_lower.contains("rgb");
 
-        if is_known.is_none() && !KNOWN_VENDOR_IDS.contains(&vid) && !is_steelseries_name {
+        if is_known.is_none() && !KNOWN_VENDOR_IDS.contains(&vid) && !is_rgb_name {
             continue;
         }
 
         let resolved_name = if let Some((_, _, label)) = is_known {
             *label
         } else {
-            "SteelSeries / MSI Compatible Controller"
+            "RGB Compatible Controller"
         };
 
         let real_dev = match fs::canonicalize(node.join("device")) {
@@ -242,7 +243,7 @@ impl MultiDeviceManager {
         if found.is_empty() {
             return Err(std::io::Error::new(
                 std::io::ErrorKind::NotFound,
-                "No SteelSeries KLC/ALC controllers found",
+                "No RGB controllers found",
             ));
         }
 
@@ -256,7 +257,7 @@ impl MultiDeviceManager {
         if controllers.is_empty() {
             return Err(std::io::Error::new(
                 std::io::ErrorKind::PermissionDenied,
-                "Permission denied or unable to open any SteelSeries HID nodes",
+                "Permission denied or unable to open any RGB HID nodes",
             ));
         }
 

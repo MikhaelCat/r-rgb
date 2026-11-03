@@ -1,14 +1,14 @@
 use clap::{Parser, Subcommand};
 use std::process;
 
-use r_steelseries::device::{find_all_devices, list_all_hid_candidates, MultiDeviceManager};
-use r_steelseries::effects::{build_scene, EFFECTS};
-use r_steelseries::settings::{self, default_config_path, format_color, parse_color, DIRECTIONS};
+use r_rgb::device::{find_all_devices, list_all_hid_candidates, MultiDeviceManager};
+use r_rgb::effects::{build_scene, EFFECTS};
+use r_rgb::settings::{self, default_config_path, format_color, parse_color, DIRECTIONS};
 
 #[derive(Parser, Debug)]
 #[command(name = "rrgb", author = "MikhaelCat", version = "0.1.0")]
 #[command(
-    about = "Blazing-fast Rust controller for MSI / SteelSeries keyboards, lightbars, and dragon logos"
+    about = "Blazing-fast Rust controller for Linux RGB keyboards, lightbars, and dragon logos"
 )]
 struct Cli {
     #[command(subcommand)]
@@ -142,7 +142,7 @@ fn main() {
         None | Some(Commands::Status) => {
             let devs = find_all_devices();
             if devs.is_empty() {
-                println!("No SteelSeries / MSI RGB controllers detected!");
+                println!("No RGB controllers detected!");
                 println!("Hint: run 'rrgb check' to inspect all attached HID devices.");
             } else {
                 for d in devs {
@@ -164,7 +164,7 @@ fn main() {
             println!("=== rrgb Hardware Diagnostics ===");
             let devs = find_all_devices();
             if devs.is_empty() {
-                println!("[!] No active SteelSeries/MSI RGB controllers matched.");
+                println!("[!] No active RGB controllers matched.");
             } else {
                 println!("[+] Successfully matched {} RGB controller(s):", devs.len());
                 for d in &devs {
@@ -237,7 +237,7 @@ fn main() {
             }
         }
         Some(Commands::Gui) => {
-            let exit_code = r_steelseries::gui::run_gui();
+            let exit_code = r_rgb::gui::run_gui();
             process::exit(i32::from(exit_code));
         }
         Some(Commands::Set {

@@ -2,29 +2,29 @@
 pkgname=rrgb-bin
 pkgver=0.1.0
 pkgrel=1
-pkgdesc="High-performance Rust RGB controller for MSI SteelSeries laptops (KLC keyboard + ALC lightbar/logo)"
+pkgdesc="High-performance Rust RGB controller for Linux laptops (per-key keyboard + front lightbar/logo)"
 arch=('x86_64')
-url="https://github.com/MikhaelCat/r-steelseries"
+url="https://github.com/MikhaelCat/r-rgb"
 license=('MIT' 'Apache-2.0')
-depends=('glibc')
+depends=('glibc' 'gtk4' 'libadwaita')
 makedepends=('cargo')
 provides=('rrgb')
 conflicts=('rrgb')
-source=("git+https://github.com/MikhaelCat/r-steelseries.git")
+source=("git+https://github.com/MikhaelCat/r-rgb.git")
 sha256sums=('SKIP')
 
 build() {
-  cd "$srcdir/r-steelseries"
+  cd "$srcdir/r-rgb"
   cargo build --release --locked
 }
 
 check() {
-  cd "$srcdir/r-steelseries"
+  cd "$srcdir/r-rgb"
   cargo test --release --locked
 }
 
 package() {
-  cd "$srcdir/r-steelseries"
+  cd "$srcdir/r-rgb"
 
   # Binary
   install -Dm755 "target/release/rrgb" "$pkgdir/usr/bin/rrgb"

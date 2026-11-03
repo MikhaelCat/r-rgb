@@ -2,9 +2,9 @@
 
 # ⚡ rrgb
 
-**Ultra-fast, memory-safe Linux RGB driver & Adwaita GUI written in 100% safe Rust for MSI & SteelSeries gaming laptops.**
+**Ultra-fast, memory-safe Linux RGB driver & Adwaita GUI written in 100% safe Rust for MSI & gaming laptops.**
 
-[![CI](https://github.com/MikhaelCat/r-steelseries/actions/workflows/ci.yml/badge.svg)](https://github.com/MikhaelCat/r-steelseries/actions)
+[![CI](https://github.com/MikhaelCat/r-rgb/actions/workflows/ci.yml/badge.svg)](https://github.com/MikhaelCat/r-rgb/actions)
 [![License: MIT OR Apache-2.0](https://img.shields.io/badge/License-MIT%20OR%20Apache--2.0-blue.svg)](LICENSE-MIT)
 [![Rust Version](https://img.shields.io/badge/rust-1.75%2B-orange.svg)](https://www.rust-lang.org)
 [![Platform](https://img.shields.io/badge/platform-linux-lightgrey.svg)]()
@@ -12,7 +12,7 @@
 [![Performance](https://img.shields.io/badge/latency-3.8µs%20generation-brightgreen.svg)]()
 [![GTK4 / Libadwaita](https://img.shields.io/badge/GUI-Native%20GTK4%20%2B%20Adwaita-blue.svg)]()
 
-*Engineered specifically for MSI laptops equipped with SteelSeries Per-Key RGB keyboards, front panoramic Aurora Lightbars, and illuminated Dragon logos.*
+*Engineered specifically for MSI laptops equipped with Per-Key RGB keyboards, front panoramic Aurora Lightbars, and illuminated Dragon logos.*
 
 [Features](#-key-features) • [Installation](#-multi-distribution-installation) • [Hardware Diagnostics](#-hardware-diagnostics) • [50 Lighting Presets](#-complete-50-hardware-presets-catalog) • [GUI Control Center](#-native-adwaita-gui) • [CLI Reference](#-command-line-reference) • [Architecture](#-architecture--benchmarks)
 
@@ -23,9 +23,9 @@
 ## 🌟 Key Features
 
 - **🚀 Ultra-Low Latency & Zero Overhead:** Written in pure, memory-safe Rust with zero Python runtime dependencies. Scene compilation executes in **~3.8 microseconds**; commands latch to hardware in **2–5 milliseconds** (50x faster than legacy Python tools).
-- **🔒 Zero Background CPU Usage:** Animations compile directly into native hardware firmware bytecode and are offloaded onto the onboard SteelSeries microcontroller. Once applied, `rrgb` immediately terminates with **0% background CPU consumption**.
+- **🔒 Zero Background CPU Usage:** Animations compile directly into native hardware firmware bytecode and are offloaded onto the onboard hardware microcontroller. Once applied, `rrgb` immediately terminates with **0% background CPU consumption**.
 - **🌈 Dual-Controller Multi-Zone Sync:** Synchronizes **both** the Per-Key RGB keyboard (`KLC 1038:1122`) and the chassis Aurora Lightbar & Dragon logo (`ALC 1038:1161`) into one unified aesthetic theme.
-- **🎨 50 Categorized Hardware Presets:** The complete original SteelSeries catalog plus modern atmospheric, cyberpunk, nature, cosmic, and tactical profiles.
+- **🎨 50 Categorized Hardware Presets:** The complete original preset catalog plus modern atmospheric, cyberpunk, nature, cosmic, and tactical profiles.
 - **🖥️ Native Libadwaita GUI (`rrgb gui`):** Built directly in Rust with GTK4 and Libadwaita. Instant startup, categorized preset browser, live brightness/speed/direction sliders, and color palette.
 - **🔍 Automated Device Probing (`rrgb check`):** Deep inspection of all kernel `/dev/hidraw*` endpoints to diagnose custom VIDs/PIDs across different laptop revisions.
 - **🛡️ Battle-Tested Reliability:** Verified with Criterion micro-benchmarks, unit tests, and continuous 20,000-cycle memory stability test suites in GitHub Actions CI with AddressSanitizer (ASan).
@@ -38,9 +38,9 @@
 
 | Controller Type | Vendor ID | Product ID | Description |
 | :--- | :--- | :--- | :--- |
-| **SteelSeries KLC** | `0x1038` | `0x1122` | Per-Key RGB Keyboard (MSI Raider GE75, GE76, GE78, 18 HX AI, Titan 18 HX series) |
-| **SteelSeries KLC (Gen 2)** | `0x1038` | `0x113A` | Modern SteelSeries Per-Key RGB Keyboard revisions |
-| **SteelSeries ALC** | `0x1038` | `0x1161` | Front Panoramic Lightbar (Aurora) & Rear Dragon Shield Logo |
+| **KLC Keyboard** | `0x1038` | `0x1122` | Per-Key RGB Keyboard (MSI Raider GE75, GE76, GE78, 18 HX AI, Titan 18 HX series) |
+| **KLC Keyboard (Gen 2)** | `0x1038` | `0x113A` | Modern Per-Key RGB Keyboard revisions |
+| **ALC Lightbar / Logo** | `0x1038` | `0x1161` | Front Panoramic Lightbar (Aurora) & Rear Dragon Shield Logo |
 | **MSI 3-Zone Controller** | `0x1770` | `0xFF00` | Classic 3-Zone backlit gaming keyboards |
 
 *Have a custom or unlisted revision? Run `rrgb check` to display all detected endpoints on your system.*
@@ -52,8 +52,8 @@
 ### Arch Linux / CachyOS / Manjaro
 Install via `makepkg` using the included [`PKGBUILD`](PKGBUILD):
 ```bash
-git clone https://github.com/MikhaelCat/r-steelseries.git
-cd r-steelseries
+git clone https://github.com/MikhaelCat/r-rgb.git
+cd r-rgb
 makepkg -si
 ```
 *(Or via your preferred AUR helper: `yay -S rrgb-bin`)*
@@ -64,31 +64,31 @@ sudo apt update && sudo apt install -y git build-essential curl libgtk-4-dev lib
 curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
 source $HOME/.cargo/env
 
-git clone https://github.com/MikhaelCat/r-steelseries.git
-cd r-steelseries
+git clone https://github.com/MikhaelCat/r-rgb.git
+cd r-rgb
 sudo ./install.sh
 ```
 
 ### Fedora / RHEL / AlmaLinux
 ```bash
 sudo dnf install -y git gcc cargo rust gtk4-devel libadwaita-devel
-git clone https://github.com/MikhaelCat/r-steelseries.git
-cd r-steelseries
+git clone https://github.com/MikhaelCat/r-rgb.git
+cd r-rgb
 sudo ./install.sh
 ```
 
 ### openSUSE (Tumbleweed / Leap)
 ```bash
 sudo zypper install -y git gcc cargo rust gtk4-devel libadwaita-devel
-git clone https://github.com/MikhaelCat/r-steelseries.git
-cd r-steelseries
+git clone https://github.com/MikhaelCat/r-rgb.git
+cd r-rgb
 sudo ./install.sh
 ```
 
 ### Universal Build & Direct Binary Installation
 ```bash
-git clone https://github.com/MikhaelCat/r-steelseries.git
-cd r-steelseries
+git clone https://github.com/MikhaelCat/r-rgb.git
+cd r-rgb
 cargo build --release
 sudo install -m 755 target/release/rrgb /usr/local/bin/rrgb
 sudo install -m 644 packaging/50-rrgb.rules /etc/udev/rules.d/50-rrgb.rules
@@ -113,7 +113,7 @@ rrgb gui
 
 ## 🎨 Complete 50 Hardware Presets Catalog
 
-`rrgb` provides **50 meticulously crafted hardware animation presets** offloaded onto the SteelSeries microcontroller:
+`rrgb` provides **50 meticulously crafted hardware animation presets** offloaded onto the hardware microcontroller:
 
 ### 1. Core & Classics (7 Presets)
 | Preset | Description | Customizable Options |
@@ -249,12 +249,12 @@ rrgb check
 ```text
 === rrgb Hardware Diagnostics ===
 [+] Successfully matched 2 RGB controller(s):
-    -> SteelSeries KLC (MSI Keyboard)        | VID: 0x1038, PID: 0x1122 | Path: /dev/hidraw3
-    -> SteelSeries ALC (MSI Lightbar / Logo) | VID: 0x1038, PID: 0x1161 | Path: /dev/hidraw5
+    -> KLC Keyboard (MSI Keyboard)        | VID: 0x1038, PID: 0x1122 | Path: /dev/hidraw3
+    -> ALC Lightbar / Logo (MSI Lightbar / Logo) | VID: 0x1038, PID: 0x1161 | Path: /dev/hidraw5
 
 === All System HID Candidates (/dev/hidraw*) ===
-[MATCHED] SteelSeries SteelSeries KLC | ID: 1038:1122 at /dev/hidraw3
-[MATCHED] SteelSeries SteelSeries ALC | ID: 1038:1161 at /dev/hidraw5
+[MATCHED] KLC Keyboard | ID: 1038:1122 at /dev/hidraw3
+[MATCHED] ALC Lightbar / Logo | ID: 1038:1161 at /dev/hidraw5
 [  SKIP  ] Logitech M350              | ID: 046d:4080 at /dev/hidraw2
 ```
 
@@ -272,7 +272,7 @@ rrgb check
                    │                        │
                    ▼                        ▼
        ┌──────────────────────┐  ┌──────────────────────┐
-       │   SteelSeries KLC    │  │   SteelSeries ALC    │
+       │   KLC Keyboard    │  │   ALC Lightbar / Logo    │
        │    (Keyboard MCU)    │  │   (Lightbar & Logo)  │
        │     VID: 0x1038      │  │     VID: 0x1038      │
        │     PID: 0x1122      │  │     PID: 0x1161      │

@@ -1,7 +1,7 @@
 use criterion::{black_box, criterion_group, criterion_main, Criterion};
-use r_steelseries::build_scene;
-use r_steelseries::protocol::{empty_effect_packet, key_packets, refresh_packet};
-use r_steelseries::settings::Settings;
+use r_rgb::build_scene;
+use r_rgb::protocol::{empty_effect_packet, key_packets, refresh_packet};
+use r_rgb::settings::Settings;
 
 fn bench_scene_building(c: &mut Criterion) {
     let mut group = c.benchmark_group("effects_and_packets");

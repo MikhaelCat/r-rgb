@@ -1,10 +1,10 @@
 #[cfg(test)]
 mod tests {
-    use r_steelseries::build_scene;
-    use r_steelseries::protocol::{
+    use r_rgb::build_scene;
+    use r_rgb::protocol::{
         empty_effect_packet, key_packets, refresh_packet, FEATURE_SIZE, OUTPUT_SIZE,
     };
-    use r_steelseries::settings::{format_color, parse_color, Settings};
+    use r_rgb::settings::{format_color, parse_color, Settings};
 
     #[test]
     fn test_color_parsing() {
@@ -28,7 +28,7 @@ mod tests {
 
     #[test]
     fn test_all_effects_generate_valid_scenes() {
-        for eff in r_steelseries::EFFECTS {
+        for eff in r_rgb::EFFECTS {
             let s = Settings {
                 enabled: true,
                 effect: eff.id.to_string(),

@@ -10,7 +10,7 @@ cargo build --release
 echo "==> Installing binary to $BIN_DIR/rrgb..."
 install -Dm755 target/release/rrgb "$BIN_DIR/rrgb"
 
-echo "==> Installing udev rules for MSI / SteelSeries..."
+echo "==> Installing udev rules for RGB controllers..."
 install -Dm644 packaging/50-rrgb.rules /etc/udev/rules.d/50-rrgb.rules
 udevadm control --reload 2>/dev/null || true
 udevadm trigger 2>/dev/null || true

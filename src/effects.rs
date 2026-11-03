@@ -603,31 +603,6 @@ fn make_rainbow(brightness: f32, p: f32) -> Effect {
     Effect::new(scaled[0], transitions, None)
 }
 
-fn make_wave_palette(
-    colors: &[(u8, u8, u8)],
-    brightness: f32,
-    p: f32,
-    wave: Wave,
-) -> (HashMap<u8, Effect>, HashMap<u8, Key>) {
-    let step = units(p / colors.len() as f32);
-    let scaled: Vec<(u8, u8, u8)> = colors.iter().map(|&c| scale_color(c, brightness)).collect();
-    let mut frames = Vec::new();
-    for &col in scaled.iter().skip(1) {
-        frames.push((col, step));
-    }
-    frames.push((scaled[0], step));
-    let (transitions, _) = fade(scaled[0], &frames);
-    let eff = Effect::new(scaled[0], transitions, Some(wave));
-    let mut effects = HashMap::new();
-    effects.insert(0, eff);
-    let keys = all_keys_matching(|| Key {
-        mode: MODE_EFFECT,
-        effect: 0,
-        ..Default::default()
-    });
-    (effects, keys)
-}
-
 pub fn build_scene(settings: &Settings) -> Scene {
     if !settings.enabled {
         let keys = all_keys_matching(|| Key {
@@ -810,23 +785,68 @@ pub fn build_scene(settings: &Settings) -> Scene {
             Scene { effects, keys }
         }
         "aurora" => {
-            let p = period(settings.speed, 16.0, 2.5);
-            let (effects, keys) = make_wave_palette(
-                &[(0, 255, 128), (0, 200, 255), (100, 0, 255), (0, 255, 200)],
-                settings.brightness,
-                p,
-                get_wave(settings),
+            // Ethereal northern lights: slow drifting curtains of neon cyan, emerald green and violet
+            let p = period(settings.speed, 8.0, 1.2);
+            let c_green = scale_color((0, 255, 120), settings.brightness);
+            let c_cyan = scale_color((0, 210, 255), settings.brightness);
+            let c_purple = scale_color((130, 0, 255), settings.brightness);
+            let step = units(p * 0.30);
+            let (tr_g, _) = fade(
+                c_green,
+                &[(c_cyan, step), (c_purple, step), (c_green, step)],
             );
+            let (tr_p, _) = fade(
+                c_purple,
+                &[(c_green, step), (c_cyan, step), (c_purple, step)],
+            );
+            let mut effects = HashMap::new();
+            effects.insert(0, Effect::new(c_green, tr_g, None));
+            effects.insert(1, Effect::new(c_purple, tr_p, None));
+            let mut keys = HashMap::new();
+            for k in layout::get_keys() {
+                let slot = if ((k.x + k.y * 1.5) as usize).is_multiple_of(2) {
+                    0
+                } else {
+                    1
+                };
+                keys.insert(
+                    k.code,
+                    Key {
+                        mode: MODE_EFFECT,
+                        effect: slot,
+                        ..Default::default()
+                    },
+                );
+            }
             Scene { effects, keys }
         }
         "neon" => {
-            let p = period(settings.speed, 8.0, 1.2);
-            let (effects, keys) = make_wave_palette(
-                &[(255, 0, 128), (0, 220, 255), (130, 0, 255)],
-                settings.brightness,
-                p,
-                get_wave(settings),
-            );
+            // Synthwave Outrun: hot magenta base with cyan digital scanlines
+            let p = period(settings.speed, 4.0, 0.6);
+            let hot_magenta = scale_color((255, 0, 128), settings.brightness);
+            let outrun_cyan = scale_color((0, 240, 255), settings.brightness);
+            let step = units(p * 0.20);
+            let (tr0, _) = fade(hot_magenta, &[(outrun_cyan, step), (hot_magenta, step * 2)]);
+            let (tr1, _) = fade(outrun_cyan, &[(hot_magenta, step), (outrun_cyan, step * 2)]);
+            let mut effects = HashMap::new();
+            effects.insert(0, Effect::new(hot_magenta, tr0, None));
+            effects.insert(1, Effect::new(outrun_cyan, tr1, None));
+            let mut keys = HashMap::new();
+            for k in layout::get_keys() {
+                let slot = if (k.y as usize).is_multiple_of(2) {
+                    0
+                } else {
+                    1
+                };
+                keys.insert(
+                    k.code,
+                    Key {
+                        mode: MODE_EFFECT,
+                        effect: slot,
+                        ..Default::default()
+                    },
+                );
+            }
             Scene { effects, keys }
         }
         "cyberpunk" => {
@@ -1032,13 +1052,35 @@ pub fn build_scene(settings: &Settings) -> Scene {
             Scene { effects, keys }
         }
         "nebula" => {
-            let p = period(settings.speed, 11.0, 1.6);
-            let (effects, keys) = make_wave_palette(
-                &[(230, 0, 150), (50, 0, 180), (140, 0, 255)],
-                settings.brightness,
-                p,
-                get_wave(settings),
+            // Cosmic interstellar cloud: rotating clouds of electric magenta, deep indigo and starburst white
+            let p = period(settings.speed, 6.0, 1.0);
+            let n_magenta = scale_color((240, 0, 160), settings.brightness);
+            let n_indigo = scale_color((50, 0, 180), settings.brightness);
+            let n_star = scale_color((230, 220, 255), settings.brightness);
+            let step = units(p * 0.25);
+            let (tr0, _) = fade(
+                n_magenta,
+                &[(n_indigo, step), (n_star, step), (n_magenta, step)],
             );
+            let (tr1, _) = fade(
+                n_indigo,
+                &[(n_star, step), (n_magenta, step), (n_indigo, step)],
+            );
+            let mut effects = HashMap::new();
+            effects.insert(0, Effect::new(n_magenta, tr0, None));
+            effects.insert(1, Effect::new(n_indigo, tr1, None));
+            let mut keys = HashMap::new();
+            for k in layout::get_keys() {
+                let slot = (((k.x * 2.0) as usize) ^ ((k.y * 2.0) as usize)) % 2;
+                keys.insert(
+                    k.code,
+                    Key {
+                        mode: MODE_EFFECT,
+                        effect: slot as u8,
+                        ..Default::default()
+                    },
+                );
+            }
             Scene { effects, keys }
         }
         "toxic" => {
@@ -1999,17 +2041,40 @@ pub fn build_scene(settings: &Settings) -> Scene {
             Scene { effects, keys }
         }
         "void" => {
-            let p = period(settings.speed, 12.0, 2.0);
-            let v_deep = scale_color((20, 0, 45), settings.brightness);
-            let (transitions, _) =
-                fade(BLACK, &[(v_deep, units(p * 0.5)), (BLACK, units(p * 0.5))]);
+            // Abyssal black hole: pure pitch-black singularity with faint spectral violet event horizon on the edges
+            let p = period(settings.speed, 6.0, 1.0);
+            let horizon_violet = scale_color((130, 0, 220), settings.brightness);
+            let singularity_dim = scale_color((15, 0, 30), settings.brightness);
+            let step = units(p * 0.40);
+            let (tr_horizon, _) = fade(
+                singularity_dim,
+                &[(horizon_violet, step), (singularity_dim, step)],
+            );
             let mut effects = HashMap::new();
-            effects.insert(0, Effect::new(BLACK, transitions, None));
-            let keys = all_keys_matching(|| Key {
-                mode: MODE_EFFECT,
-                effect: 0,
-                ..Default::default()
-            });
+            effects.insert(0, Effect::new(singularity_dim, tr_horizon, None));
+            let mut keys = HashMap::new();
+            for k in layout::get_keys() {
+                // Outer edges glow with horizon radiation, inner keys stay completely black
+                if k.x <= 1.5 || k.x >= 17.5 || k.y <= 0.8 || k.y >= 5.0 {
+                    keys.insert(
+                        k.code,
+                        Key {
+                            mode: MODE_EFFECT,
+                            effect: 0,
+                            ..Default::default()
+                        },
+                    );
+                } else {
+                    keys.insert(
+                        k.code,
+                        Key {
+                            color: BLACK,
+                            mode: protocol::MODE_STATIC,
+                            ..Default::default()
+                        },
+                    );
+                }
+            }
             Scene { effects, keys }
         }
         "stealth" => {
