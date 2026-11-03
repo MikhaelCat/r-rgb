@@ -45,6 +45,8 @@ enum Commands {
     },
     /// Launch the graphical interface (GUI)
     Gui,
+    /// Live audio spectrum visualizer (PipeWire / PulseAudio)
+    Audio,
     /// Choose an effect and its options
     Set {
         /// Effect name (run 'rrgb effects' to see all 50 available hardware presets)
@@ -251,6 +253,12 @@ fn main() {
         Some(Commands::Gui) => {
             let exit_code = r_rgb::gui::run_gui();
             process::exit(i32::from(exit_code));
+        }
+        Some(Commands::Audio) => {
+            if let Err(e) = r_rgb::audio::run_visualizer_cli() {
+                eprintln!("Audio Visualizer error: {}", e);
+                process::exit(1);
+            }
         }
         Some(Commands::Set {
             effect,

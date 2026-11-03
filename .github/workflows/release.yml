@@ -1,0 +1,47 @@
+name: Automated Release Assets
+
+on:
+  push:
+    tags:
+      - "v*"
+
+jobs:
+  build-release:
+    name: Build Release Binary & Package
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install GTK4 and Libadwaita development libraries
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libgtk-4-dev libadwaita-1-dev
+
+      - name: Install Rust stable
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Build release binary
+        run: cargo build --release
+
+      - name: Package tarball
+        run: |
+          VERSION=${GITHUB_REF#refs/tags/}
+          mkdir -p staging/rrgb-$VERSION
+          cp target/release/rrgb staging/rrgb-$VERSION/
+          cp packaging/50-rrgb.rules staging/rrgb-$VERSION/
+          cp packaging/rrgb.service staging/rrgb-$VERSION/
+          cp README.md staging/rrgb-$VERSION/
+          cp LICENSE-MIT staging/rrgb-$VERSION/
+          cp install.sh staging/rrgb-$VERSION/
+          chmod +x staging/rrgb-$VERSION/install.sh
+          cd staging
+          tar -czvf ../rrgb-x86_64-linux-$VERSION.tar.gz rrgb-$VERSION
+          cd ..
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: rrgb-x86_64-linux-*.tar.gz
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
