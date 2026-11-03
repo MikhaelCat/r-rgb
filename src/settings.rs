@@ -113,6 +113,12 @@ pub struct AppData {
     pub profiles: std::collections::HashMap<String, Settings>,
     #[serde(default)]
     pub favorites: Vec<String>,
+    #[serde(default = "default_language")]
+    pub language: String,
+}
+
+fn default_language() -> String {
+    "ru".to_string()
 }
 
 pub fn load_app_data<P: AsRef<Path>>(path: P) -> AppData {

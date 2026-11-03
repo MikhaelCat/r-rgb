@@ -31,6 +31,217 @@ const SWATCHES: &[(&str, &str)] = &[
     ("White", "#ffffff"),
 ];
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Language {
+    Ru,
+    En,
+}
+
+impl Language {
+    pub fn parse_code(s: &str) -> Self {
+        match s {
+            "en" => Language::En,
+            _ => Language::Ru,
+        }
+    }
+
+    pub fn code(&self) -> &'static str {
+        match self {
+            Language::Ru => "ru",
+            Language::En => "en",
+        }
+    }
+}
+
+pub struct I18n {
+    pub app_title: &'static str,
+    pub lang_group: &'static str,
+    pub lang_row_title: &'static str,
+    pub lang_row_subtitle: &'static str,
+    pub preview_group_title: &'static str,
+    pub preview_group_desc: &'static str,
+    pub profile_group_title: &'static str,
+    pub profile_group_desc: &'static str,
+    pub profile_row_title: &'static str,
+    pub profile_row_subtitle: &'static str,
+    pub profile_save: &'static str,
+    pub profile_del: &'static str,
+    pub profile_dialog_title: &'static str,
+    pub profile_dialog_body: &'static str,
+    pub cancel: &'static str,
+    pub save: &'static str,
+    pub master_group_title: &'static str,
+    pub power_title: &'static str,
+    pub power_subtitle: &'static str,
+    pub bright_title: &'static str,
+    pub bright_subtitle: &'static str,
+    pub thermal_group_title: &'static str,
+    pub thermal_group_desc: &'static str,
+    pub thermal_title: &'static str,
+    pub thermal_polling: &'static str,
+    pub thermal_prefix: &'static str,
+    pub zones_group_title: &'static str,
+    pub zones_group_desc: &'static str,
+    pub zones_switch_title: &'static str,
+    pub zones_switch_subtitle: &'static str,
+    pub zones_bar_title: &'static str,
+    pub zones_bar_subtitle: &'static str,
+    pub bar_dialog_title: &'static str,
+    pub motion_group_title: &'static str,
+    pub speed_title: &'static str,
+    pub speed_subtitle: &'static str,
+    pub dir_title: &'static str,
+    pub dir_subtitle: &'static str,
+    pub color_group_title: &'static str,
+    pub color_group_desc: &'static str,
+    pub color_picker_title: &'static str,
+    pub color_picker_subtitle: &'static str,
+    pub color_dialog_title: &'static str,
+    pub presets_group_title: &'static str,
+    pub presets_group_desc: &'static str,
+    pub fav_title: &'static str,
+    pub fav_subtitle: &'static str,
+    pub fav_count_fmt: &'static str,
+    pub presets_count_fmt: &'static str,
+}
+
+pub fn get_i18n(lang: Language) -> I18n {
+    match lang {
+        Language::Ru => I18n {
+            app_title: "rrgb — Управление подсветкой оборудования",
+            lang_group: "Языковые настройки",
+            lang_row_title: "Язык интерфейса",
+            lang_row_subtitle: "Выберите язык графического интерфейса",
+            preview_group_title: "Предпросмотр в реальном времени",
+            preview_group_desc: "Интерактивная визуализация подсветки клавиатуры и светового бара",
+            profile_group_title: "Профили и пресеты",
+            profile_group_desc: "Сохранение, загрузка и удаление пользовательских конфигураций",
+            profile_row_title: "Текущий профиль",
+            profile_row_subtitle: "Выбор или запись профилей в ~/.config/rrgb/profiles.json",
+            profile_save: "Сохранить",
+            profile_del: "Удалить",
+            profile_dialog_title: "Сохранить пользовательский профиль",
+            profile_dialog_body: "Введите уникальное имя для текущей конфигурации подсветки:",
+            cancel: "Отмена",
+            save: "Сохранить",
+            master_group_title: "Главное управление",
+            power_title: "Подсветка включена",
+            power_subtitle: "Включение и выключение светодиодов клавиатуры и бара",
+            bright_title: "Яркость",
+            bright_subtitle: "Общий уровень освещенности оборудования",
+            thermal_group_title: "Термо-реактивная синхронизация",
+            thermal_group_desc: "Плавное отображение температуры CPU/GPU цветом в реальном времени",
+            thermal_title: "Термо-реактивный режим",
+            thermal_polling: "Температура CPU: опрос датчиков...",
+            thermal_prefix: "Температура CPU в реальном времени: ",
+            zones_group_title: "Независимые аппаратные зоны",
+            zones_group_desc:
+                "Раздельный контроль клавиатуры и фронтального светового бара / логотипа",
+            zones_switch_title: "Независимая зона бара",
+            zones_switch_subtitle: "Настраивать цвет светового бара отдельно от клавиатуры",
+            zones_bar_title: "Цвет светового бара и логотипа",
+            zones_bar_subtitle: "Индивидуальная подсветка фронтального светового бара",
+            bar_dialog_title: "Выбор цвета светового бара",
+            motion_group_title: "Динамика анимации",
+            speed_title: "Скорость анимации",
+            speed_subtitle: "Частота аппаратных переходов эффекта",
+            dir_title: "Направление волны",
+            dir_subtitle: "Пространственный вектор распространения волны",
+            color_group_title: "Цветовая настройка клавиатуры",
+            color_group_desc: "Выберите готовый цвет или откройте цветовую палитру",
+            color_picker_title: "Палитра любого цвета",
+            color_picker_subtitle: "Нажмите для выбора любого оттенка из RGB спектра",
+            color_dialog_title: "Выбор цвета клавиатуры",
+            presets_group_title: "Аппаратные режимы подсветки (50)",
+            presets_group_desc: "Профили, исполняемые встроенным микроконтроллером клавиатуры",
+            fav_title: "Избранные эффекты (★)",
+            fav_subtitle: "Быстрый доступ к вашим сохраненным эффектам",
+            fav_count_fmt: "Закреплено избранных пресетов: {}",
+            presets_count_fmt: "{} ({} пресетов)",
+        },
+        Language::En => I18n {
+            app_title: "rrgb — Hardware Lighting Control",
+            lang_group: "Language Settings",
+            lang_row_title: "Interface Language",
+            lang_row_subtitle: "Select preferred GUI display language",
+            preview_group_title: "Real-Time Hardware Preview",
+            preview_group_desc:
+                "Interactive visualization of active illumination across keyboard and lightbar",
+            profile_group_title: "User Profiles and Presets",
+            profile_group_desc: "Save, load, and manage custom lighting configurations",
+            profile_row_title: "Active Profile",
+            profile_row_subtitle:
+                "Select or store custom profiles into ~/.config/rrgb/profiles.json",
+            profile_save: "Save",
+            profile_del: "Delete",
+            profile_dialog_title: "Save Custom Profile",
+            profile_dialog_body: "Give a unique name for your current lighting configuration:",
+            cancel: "Cancel",
+            save: "Save",
+            master_group_title: "Master Control",
+            power_title: "Lighting Enabled",
+            power_subtitle: "Toggle keyboard and lightbar LEDs",
+            bright_title: "Brightness",
+            bright_subtitle: "Overall illumination level",
+            thermal_group_title: "Thermal Reactive Hardware Sync",
+            thermal_group_desc:
+                "Dynamically map hardware CPU/GPU temperatures to live color gradients",
+            thermal_title: "Thermal Reactive Mode",
+            thermal_polling: "CPU Temperature: polling sensors...",
+            thermal_prefix: "Live CPU Temperature: ",
+            zones_group_title: "Independent Hardware Zones",
+            zones_group_desc:
+                "Separate control for per-key keyboard and front lightbar / dragon logo",
+            zones_switch_title: "Independent Lightbar Zone",
+            zones_switch_subtitle: "Configure front lightbar / dragon logo separately from keys",
+            zones_bar_title: "Lightbar and Logo Color",
+            zones_bar_subtitle: "Custom dedicated illumination for the front lightbar and logo",
+            bar_dialog_title: "Select Lightbar and Logo Color",
+            motion_group_title: "Animation Dynamics",
+            speed_title: "Animation Speed",
+            speed_subtitle: "Frequency of hardware transitions",
+            dir_title: "Wave Direction",
+            dir_subtitle: "Spatial progression vector",
+            color_group_title: "Keyboard Color Customization",
+            color_group_desc:
+                "Choose preset swatches or open the color picker for any custom RGB value",
+            color_picker_title: "Custom Color Picker",
+            color_picker_subtitle: "Click to pick any hex or RGB hue from the color spectrum",
+            color_dialog_title: "Select Custom Color",
+            presets_group_title: "Hardware Animation Profiles (50)",
+            presets_group_desc: "Hardware-offloaded profiles executed directly on the onboard MCU",
+            fav_title: "Favorites and Pinned (★)",
+            fav_subtitle: "Your favorite quick-access effects",
+            fav_count_fmt: "{} pinned favorite preset(s)",
+            presets_count_fmt: "{} ({} presets)",
+        },
+    }
+}
+
+fn get_category_translation(
+    cat_name: &'static str,
+    lang: Language,
+) -> (&'static str, &'static str) {
+    match (cat_name, lang) {
+        ("Core", Language::Ru) => ("Базовые", "Классика и основные режимы"),
+        ("Sci-Fi", Language::Ru) => ("Научная фантастика", "Киберпанк, Sci-Fi и цифровые эффекты"),
+        ("Nature", Language::Ru) => ("Природа", "Природные и атмосферные стихии"),
+        ("Space", Language::Ru) => ("Космос", "Астрономия и глубокий космос"),
+        ("Ambient", Language::Ru) => ("Атмосферные", "Спокойное настроение и эмбиент"),
+        ("Tactical", Language::Ru) => ("Тактические", "Экшен, прицелы и динамика"),
+        ("Harmonies", Language::Ru) => ("Гармонии", "Экзотические цветовые спектры"),
+
+        ("Core", Language::En) => ("Core", "Classics and Fundamentals"),
+        ("Sci-Fi", Language::En) => ("Sci-Fi", "Cyberpunk, Sci-Fi and Digital"),
+        ("Nature", Language::En) => ("Nature", "Nature and Atmospheric Elements"),
+        ("Space", Language::En) => ("Space", "Astronomy and Deep Cosmos"),
+        ("Ambient", Language::En) => ("Ambient", "Mood, Chill and Ambient"),
+        ("Tactical", Language::En) => ("Tactical", "Tactical, Action and Dynamic"),
+        ("Harmonies", Language::En) => ("Harmonies", "Exotic Chromatic Harmonies"),
+        _ => (cat_name, ""),
+    }
+}
+
 struct State {
     settings: Settings,
     config_path: std::path::PathBuf,
@@ -38,6 +249,7 @@ struct State {
     app_data: AppData,
     thermal_enabled: bool,
     current_temp: f32,
+    language: Language,
 }
 
 pub fn run_gui() -> glib::ExitCode {
@@ -108,6 +320,7 @@ fn build_ui(app: &Application) {
     let profiles_path = default_profiles_path();
     let initial_settings = settings::load(&config_path);
     let app_data = load_app_data(&profiles_path);
+    let initial_lang = Language::parse_code(&app_data.language);
 
     let state = Arc::new(Mutex::new(State {
         settings: initial_settings.clone(),
@@ -116,11 +329,14 @@ fn build_ui(app: &Application) {
         app_data,
         thermal_enabled: false,
         current_temp: 45.0,
+        language: initial_lang,
     }));
+
+    let cur_i18n = get_i18n(initial_lang);
 
     let window = ApplicationWindow::builder()
         .application(app)
-        .title("rrgb — Hardware Lighting Control")
+        .title(cur_i18n.app_title)
         .default_width(740)
         .default_height(900)
         .build();
@@ -149,13 +365,29 @@ fn build_ui(app: &Application) {
     main_box.append(&scroller);
 
     // ========================================================
-    // FEATURE 2: Interactive Live Preview Canvas (DrawingArea)
+    // LANGUAGE SWITCHER
+    // ========================================================
+    let lang_group = PreferencesGroup::builder()
+        .title(cur_i18n.lang_group)
+        .build();
+
+    let lang_row = ActionRow::builder()
+        .title(cur_i18n.lang_row_title)
+        .subtitle(cur_i18n.lang_row_subtitle)
+        .build();
+
+    let lang_dropdown = gtk4::DropDown::from_strings(&["Русский (RU)", "English (EN)"]);
+    lang_dropdown.set_selected(if initial_lang == Language::Ru { 0 } else { 1 });
+    lang_row.add_suffix(&lang_dropdown);
+    lang_group.add(&lang_row);
+    content_box.append(&lang_group);
+
+    // ========================================================
+    // Interactive Live Preview Canvas (DrawingArea)
     // ========================================================
     let preview_group = PreferencesGroup::builder()
-        .title("Real-Time Hardware Preview")
-        .description(
-            "Interactive visualization of active illumination across keyboard and lightbar",
-        )
+        .title(cur_i18n.preview_group_title)
+        .description(cur_i18n.preview_group_desc)
         .build();
 
     let drawing_area = gtk4::DrawingArea::builder()
@@ -251,22 +483,22 @@ fn build_ui(app: &Application) {
     content_box.append(&preview_group);
 
     // ========================================================
-    // FEATURE 3: Custom User Profiles (Save/Load/Delete)
+    // Custom User Profiles (Save/Load/Delete)
     // ========================================================
     let profile_group = PreferencesGroup::builder()
-        .title("User Profiles & Presets")
-        .description("Save, load, and manage custom lighting configurations")
+        .title(cur_i18n.profile_group_title)
+        .description(cur_i18n.profile_group_desc)
         .build();
 
     let profile_row = ActionRow::builder()
-        .title("Active Profile")
-        .subtitle("Select or store custom profiles into ~/.config/rrgb/profiles.json")
+        .title(cur_i18n.profile_row_title)
+        .subtitle(cur_i18n.profile_row_subtitle)
         .build();
 
     let profile_box = gtk4::Box::new(gtk4::Orientation::Horizontal, 8);
     let profile_dropdown = gtk4::DropDown::from_strings(&["Default"]);
-    let save_profile_btn = gtk4::Button::with_label("Save");
-    let delete_profile_btn = gtk4::Button::with_label("Delete");
+    let save_profile_btn = gtk4::Button::with_label(cur_i18n.profile_save);
+    let delete_profile_btn = gtk4::Button::with_label(cur_i18n.profile_del);
 
     profile_box.append(&profile_dropdown);
     profile_box.append(&save_profile_btn);
@@ -295,10 +527,12 @@ fn build_ui(app: &Application) {
     // ========================================================
     // 1. Master Toggle & Brightness
     // ========================================================
-    let general_group = PreferencesGroup::builder().title("Master Control").build();
+    let general_group = PreferencesGroup::builder()
+        .title(cur_i18n.master_group_title)
+        .build();
     let power_row = SwitchRow::builder()
-        .title("Lighting Enabled")
-        .subtitle("Toggle keyboard and lightbar LEDs")
+        .title(cur_i18n.power_title)
+        .subtitle(cur_i18n.power_subtitle)
         .active(initial_settings.enabled)
         .build();
 
@@ -308,8 +542,8 @@ fn build_ui(app: &Application) {
     brightness_scale.set_size_request(160, -1);
 
     let brightness_row = ActionRow::builder()
-        .title("Brightness")
-        .subtitle("Overall illumination level")
+        .title(cur_i18n.bright_title)
+        .subtitle(cur_i18n.bright_subtitle)
         .build();
     brightness_row.add_suffix(&brightness_scale);
 
@@ -318,16 +552,16 @@ fn build_ui(app: &Application) {
     content_box.append(&general_group);
 
     // ========================================================
-    // FEATURE 4: Thermal Reactive Sync
+    // Thermal Reactive Sync
     // ========================================================
     let thermal_group = PreferencesGroup::builder()
-        .title("Thermal Reactive Hardware Sync")
-        .description("Dynamically map hardware CPU/GPU temperatures to live color gradients")
+        .title(cur_i18n.thermal_group_title)
+        .description(cur_i18n.thermal_group_desc)
         .build();
 
     let thermal_switch = SwitchRow::builder()
-        .title("Thermal Reactive Mode")
-        .subtitle("Current CPU Temperature: polling...")
+        .title(cur_i18n.thermal_title)
+        .subtitle(cur_i18n.thermal_polling)
         .active(false)
         .build();
 
@@ -335,16 +569,16 @@ fn build_ui(app: &Application) {
     content_box.append(&thermal_group);
 
     // ========================================================
-    // FEATURE 5: Independent Device Zones (Keyboard vs Lightbar)
+    // Independent Device Zones (Keyboard vs Lightbar)
     // ========================================================
     let zones_group = PreferencesGroup::builder()
-        .title("Independent Hardware Zones")
-        .description("Separate control for per-key keyboard and front lightbar / dragon logo")
+        .title(cur_i18n.zones_group_title)
+        .description(cur_i18n.zones_group_desc)
         .build();
 
     let zones_switch = SwitchRow::builder()
-        .title("Independent Lightbar Zone")
-        .subtitle("Configure front lightbar / dragon logo separately from the keyboard keys")
+        .title(cur_i18n.zones_switch_title)
+        .subtitle(cur_i18n.zones_switch_subtitle)
         .active(initial_settings.independent_zones)
         .build();
 
@@ -363,7 +597,7 @@ fn build_ui(app: &Application) {
     );
 
     let bar_dialog = gtk4::ColorDialog::builder()
-        .title("Lightbar & Logo Color")
+        .title(cur_i18n.bar_dialog_title)
         .with_alpha(false)
         .build();
 
@@ -375,8 +609,8 @@ fn build_ui(app: &Application) {
         .build();
 
     let bar_row = ActionRow::builder()
-        .title("Lightbar & Logo Color")
-        .subtitle("Custom dedicated illumination for the front lightbar and dragon logo")
+        .title(cur_i18n.zones_bar_title)
+        .subtitle(cur_i18n.zones_bar_subtitle)
         .activatable_widget(&bar_color_btn)
         .build();
     bar_row.add_suffix(&bar_color_btn);
@@ -389,7 +623,7 @@ fn build_ui(app: &Application) {
     // 2. Motion Group (Speed & Direction)
     // ========================================================
     let motion_group = PreferencesGroup::builder()
-        .title("Animation Dynamics")
+        .title(cur_i18n.motion_group_title)
         .build();
     let speed_scale = gtk4::Scale::with_range(gtk4::Orientation::Horizontal, 0.0, 100.0, 1.0);
     speed_scale.set_value(initial_settings.speed as f64 * 100.0);
@@ -397,8 +631,8 @@ fn build_ui(app: &Application) {
     speed_scale.set_size_request(160, -1);
 
     let speed_row = ActionRow::builder()
-        .title("Animation Speed")
-        .subtitle("Frequency of hardware transitions")
+        .title(cur_i18n.speed_title)
+        .subtitle(cur_i18n.speed_subtitle)
         .build();
     speed_row.add_suffix(&speed_scale);
 
@@ -410,8 +644,8 @@ fn build_ui(app: &Application) {
         dir_dropdown.set_selected(pos as u32);
     }
     let dir_row = ActionRow::builder()
-        .title("Wave Direction")
-        .subtitle("Spatial progression vector")
+        .title(cur_i18n.dir_title)
+        .subtitle(cur_i18n.dir_subtitle)
         .build();
     dir_row.add_suffix(&dir_dropdown);
 
@@ -423,8 +657,8 @@ fn build_ui(app: &Application) {
     // 3. Color Customization (Picker & Swatches)
     // ========================================================
     let color_group = PreferencesGroup::builder()
-        .title("Keyboard Color Customization")
-        .description("Choose preset swatches or open the color picker for any custom RGB value")
+        .title(cur_i18n.color_group_title)
+        .description(cur_i18n.color_group_desc)
         .build();
 
     let init_rgb = settings::parse_color(&initial_settings.color).unwrap_or((0, 255, 160));
@@ -436,7 +670,7 @@ fn build_ui(app: &Application) {
     );
 
     let color_dialog = gtk4::ColorDialog::builder()
-        .title("Select Custom Color")
+        .title(cur_i18n.color_dialog_title)
         .with_alpha(false)
         .build();
 
@@ -447,8 +681,8 @@ fn build_ui(app: &Application) {
         .build();
 
     let picker_row = ActionRow::builder()
-        .title("Custom Color Picker")
-        .subtitle("Click to pick any hex or RGB hue from the color spectrum")
+        .title(cur_i18n.color_picker_title)
+        .subtitle(cur_i18n.color_picker_subtitle)
         .activatable_widget(&color_btn)
         .build();
     picker_row.add_suffix(&color_btn);
@@ -496,25 +730,16 @@ fn build_ui(app: &Application) {
     content_box.append(&color_group);
 
     // ========================================================
-    // FEATURE 1: Live Search & Filter Bar
+    // Hardware Animation Presets & Favorites
     // ========================================================
     let presets_group = PreferencesGroup::builder()
-        .title("Hardware Animation Profiles (50)")
-        .description("Hardware-offloaded profiles executed directly on the onboard MCU")
+        .title(cur_i18n.presets_group_title)
+        .description(cur_i18n.presets_group_desc)
         .build();
 
-    let search_entry = gtk4::SearchEntry::builder()
-        .placeholder_text("Search effects by name, tag, or description...")
-        .margin_bottom(8)
-        .build();
-    presets_group.add(&search_entry);
-
-    // ========================================================
-    // FEATURE 6: Favorites / Pinned Effects
-    // ========================================================
     let fav_expander = ExpanderRow::builder()
-        .title("Favorites & Pinned (★)")
-        .subtitle("Your favorite quick-access effects")
+        .title(cur_i18n.fav_title)
+        .subtitle(cur_i18n.fav_subtitle)
         .expanded(true)
         .build();
     presets_group.add(&fav_expander);
@@ -540,9 +765,11 @@ fn build_ui(app: &Application) {
             let st = state.lock().unwrap();
             let favs = st.app_data.favorites.clone();
             let active_eff = st.settings.effect.clone();
+            let lang = st.language;
             drop(st);
 
-            fav_expander.set_subtitle(&format!("{} pinned favorite preset(s)", favs.len()));
+            let i18n = get_i18n(lang);
+            fav_expander.set_subtitle(&i18n.fav_count_fmt.replace("{}", &favs.len().to_string()));
 
             for fav_id in favs {
                 if let Some(eff) = EFFECTS.iter().find(|e| e.id == fav_id) {
@@ -592,30 +819,23 @@ fn build_ui(app: &Application) {
     };
     (refresh_favorites_view)();
 
-    // Effect Row Representation for filtering & dynamic favorites
-    struct EffectRowWidget {
-        id: &'static str,
-        name: &'static str,
-        desc: &'static str,
-        cat: &'static str,
-        row: ActionRow,
+    struct CategoryWidget {
+        raw_name: &'static str,
+        expander: ExpanderRow,
     }
-
-    let all_effect_widgets: Rc<RefCell<Vec<EffectRowWidget>>> = Rc::new(RefCell::new(Vec::new()));
-    type CategoryExpander = (ExpanderRow, Vec<ActionRow>);
-    let category_expanders: Rc<RefCell<Vec<CategoryExpander>>> = Rc::new(RefCell::new(Vec::new()));
+    let category_widgets: Rc<RefCell<Vec<CategoryWidget>>> = Rc::new(RefCell::new(Vec::new()));
 
     let categories = [
-        ("Core", "Classics and Fundamentals"),
-        ("Sci-Fi", "Cyberpunk, Sci-Fi and Digital"),
-        ("Nature", "Nature and Atmospheric Elements"),
-        ("Space", "Astronomy and Deep Cosmos"),
-        ("Ambient", "Mood, Chill and Ambient"),
-        ("Tactical", "Tactical, Action and Dynamic"),
-        ("Harmonies", "Exotic Chromatic Harmonies"),
+        "Core",
+        "Sci-Fi",
+        "Nature",
+        "Space",
+        "Ambient",
+        "Tactical",
+        "Harmonies",
     ];
 
-    for (cat_name, cat_desc) in categories {
+    for cat_name in categories {
         let cat_effects: Vec<&crate::effects::EffectInfo> =
             EFFECTS.iter().filter(|e| e.category == cat_name).collect();
 
@@ -624,14 +844,22 @@ fn build_ui(app: &Application) {
         }
 
         let contains_active = cat_effects.iter().any(|e| e.id == initial_settings.effect);
+        let (loc_name, loc_desc) = get_category_translation(cat_name, initial_lang);
 
         let expander = ExpanderRow::builder()
-            .title(format!("{} ({} presets)", cat_name, cat_effects.len()))
-            .subtitle(cat_desc)
+            .title(format!(
+                "{} ({} {})",
+                loc_name,
+                cat_effects.len(),
+                if initial_lang == Language::Ru {
+                    "пресетов"
+                } else {
+                    "presets"
+                }
+            ))
+            .subtitle(loc_desc)
             .expanded(contains_active)
             .build();
-
-        let mut row_list = Vec::new();
 
         for eff in cat_effects {
             let check = gtk4::CheckButton::builder()
@@ -706,59 +934,132 @@ fn build_ui(app: &Application) {
             });
 
             expander.add_row(&row);
-            row_list.push(row.clone());
-
-            all_effect_widgets.borrow_mut().push(EffectRowWidget {
-                id: eff.id,
-                name: eff.name,
-                desc: eff.description,
-                cat: cat_name,
-                row,
-            });
         }
 
-        category_expanders
-            .borrow_mut()
-            .push((expander.clone(), row_list));
+        category_widgets.borrow_mut().push(CategoryWidget {
+            raw_name: cat_name,
+            expander: expander.clone(),
+        });
         presets_group.add(&expander);
     }
 
     content_box.append(&presets_group);
 
-    // Search filter callback
-    let widgets_ref = all_effect_widgets.clone();
-    let expanders_ref = category_expanders.clone();
-    search_entry.connect_search_changed(move |entry| {
-        let query = entry.text().to_lowercase().trim().to_string();
-        let widgets = widgets_ref.borrow();
-        let expanders = expanders_ref.borrow();
+    // ========================================================
+    // Connect Language Switcher Change
+    // ========================================================
+    let st_lang = state.clone();
+    let window_lang = window.clone();
+    let lang_group_ref = lang_group.clone();
+    let lang_row_ref = lang_row.clone();
+    let preview_group_ref = preview_group.clone();
+    let profile_group_ref = profile_group.clone();
+    let profile_row_ref = profile_row.clone();
+    let save_btn_ref = save_profile_btn.clone();
+    let del_btn_ref = delete_profile_btn.clone();
+    let general_group_ref = general_group.clone();
+    let power_row_ref = power_row.clone();
+    let bright_row_ref = brightness_row.clone();
+    let thermal_group_ref = thermal_group.clone();
+    let thermal_switch_ref = thermal_switch.clone();
+    let zones_group_ref = zones_group.clone();
+    let zones_switch_ref = zones_switch.clone();
+    let bar_row_ref = bar_row.clone();
+    let motion_group_ref = motion_group.clone();
+    let speed_row_ref = speed_row.clone();
+    let dir_row_ref = dir_row.clone();
+    let color_group_ref = color_group.clone();
+    let picker_row_ref = picker_row.clone();
+    let presets_group_ref = presets_group.clone();
+    let fav_expander_ref = fav_expander.clone();
+    let refresh_favs_lang = refresh_favorites_view.clone();
+    let category_widgets_ref = category_widgets.clone();
 
-        for w in widgets.iter() {
-            if query.is_empty() {
-                w.row.set_visible(true);
-            } else {
-                let matches = w.name.to_lowercase().contains(&query)
-                    || w.desc.to_lowercase().contains(&query)
-                    || w.cat.to_lowercase().contains(&query)
-                    || w.id.to_lowercase().contains(&query);
-                w.row.set_visible(matches);
-            }
-        }
-
-        if !query.is_empty() {
-            for (expander, rows) in expanders.iter() {
-                let has_visible = rows.iter().any(|r| r.is_visible());
-                expander.set_visible(has_visible);
-                if has_visible {
-                    expander.set_expanded(true);
-                }
-            }
+    lang_dropdown.connect_selected_notify(move |dd| {
+        let new_lang = if dd.selected() == 0 {
+            Language::Ru
         } else {
-            for (expander, _) in expanders.iter() {
-                expander.set_visible(true);
-            }
+            Language::En
+        };
+
+        {
+            let mut st = st_lang.lock().unwrap();
+            st.language = new_lang;
+            st.app_data.language = new_lang.code().to_string();
+            let _ = save_app_data(&st.app_data, &st.profiles_path);
         }
+
+        let i18n = get_i18n(new_lang);
+        window_lang.set_title(Some(i18n.app_title));
+        lang_group_ref.set_title(i18n.lang_group);
+        lang_row_ref.set_title(i18n.lang_row_title);
+        lang_row_ref.set_subtitle(i18n.lang_row_subtitle);
+
+        preview_group_ref.set_title(i18n.preview_group_title);
+        preview_group_ref.set_description(Some(i18n.preview_group_desc));
+
+        profile_group_ref.set_title(i18n.profile_group_title);
+        profile_group_ref.set_description(Some(i18n.profile_group_desc));
+        profile_row_ref.set_title(i18n.profile_row_title);
+        profile_row_ref.set_subtitle(i18n.profile_row_subtitle);
+        save_btn_ref.set_label(i18n.profile_save);
+        del_btn_ref.set_label(i18n.profile_del);
+
+        general_group_ref.set_title(i18n.master_group_title);
+        power_row_ref.set_title(i18n.power_title);
+        power_row_ref.set_subtitle(i18n.power_subtitle);
+        bright_row_ref.set_title(i18n.bright_title);
+        bright_row_ref.set_subtitle(i18n.bright_subtitle);
+
+        thermal_group_ref.set_title(i18n.thermal_group_title);
+        thermal_group_ref.set_description(Some(i18n.thermal_group_desc));
+        thermal_switch_ref.set_title(i18n.thermal_title);
+
+        zones_group_ref.set_title(i18n.zones_group_title);
+        zones_group_ref.set_description(Some(i18n.zones_group_desc));
+        zones_switch_ref.set_title(i18n.zones_switch_title);
+        zones_switch_subtitle_ref(&zones_switch_ref, i18n.zones_switch_subtitle);
+        bar_row_ref.set_title(i18n.zones_bar_title);
+        bar_row_ref.set_subtitle(i18n.zones_bar_subtitle);
+
+        motion_group_ref.set_title(i18n.motion_group_title);
+        speed_row_ref.set_title(i18n.speed_title);
+        speed_row_ref.set_subtitle(i18n.speed_subtitle);
+        dir_row_ref.set_title(i18n.dir_title);
+        dir_row_ref.set_subtitle(i18n.dir_subtitle);
+
+        color_group_ref.set_title(i18n.color_group_title);
+        color_group_ref.set_description(Some(i18n.color_group_desc));
+        picker_row_ref.set_title(i18n.color_picker_title);
+        picker_row_ref.set_subtitle(i18n.color_picker_subtitle);
+
+        presets_group_ref.set_title(i18n.presets_group_title);
+        presets_group_ref.set_description(Some(i18n.presets_group_desc));
+        fav_expander_ref.set_title(i18n.fav_title);
+
+        for cw in category_widgets_ref.borrow().iter() {
+            let cat_effects_count = EFFECTS.iter().filter(|e| e.category == cw.raw_name).count();
+            let (loc_name, loc_desc) = get_category_translation(cw.raw_name, new_lang);
+            let title_str = format!(
+                "{} ({} {})",
+                loc_name,
+                cat_effects_count,
+                if new_lang == Language::Ru {
+                    "пресетов"
+                } else {
+                    "presets"
+                }
+            );
+            cw.expander.set_title(&title_str);
+            cw.expander.set_subtitle(loc_desc);
+        }
+
+        refresh_favs_lang();
     });
+
+    fn zones_switch_subtitle_ref(row: &SwitchRow, subtitle: &str) {
+        row.set_subtitle(subtitle);
+    }
 
     // ========================================================
     // Connect remaining Event Handlers
@@ -906,20 +1207,24 @@ fn build_ui(app: &Application) {
     let st_save_prof = state.clone();
     let refresh_dropdown_save = refresh_profile_dropdown.clone();
     save_profile_btn.connect_clicked(move |_| {
+        let st_now = st_save_prof.lock().unwrap();
+        let i18n = get_i18n(st_now.language);
+        drop(st_now);
+
         let entry = gtk4::Entry::builder()
-            .placeholder_text("Enter profile name...")
+            .placeholder_text("Profile name...")
             .margin_top(8)
             .margin_bottom(8)
             .build();
 
         let dialog = libadwaita::MessageDialog::builder()
             .transient_for(&window_ref)
-            .heading("Save Custom Profile")
-            .body("Give a unique name for your current lighting configuration:")
+            .heading(i18n.profile_dialog_title)
+            .body(i18n.profile_dialog_body)
             .build();
         dialog.set_extra_child(Some(&entry));
-        dialog.add_response("cancel", "Cancel");
-        dialog.add_response("save", "Save");
+        dialog.add_response("cancel", i18n.cancel);
+        dialog.add_response("save", i18n.save);
         dialog.set_response_appearance("save", libadwaita::ResponseAppearance::Suggested);
 
         let st_dialog = st_save_prof.clone();
@@ -977,7 +1282,8 @@ fn build_ui(app: &Application) {
         if let Some(temp) = read_cpu_temp() {
             let mut st = st_timer.lock().unwrap();
             st.current_temp = temp;
-            thermal_label_row.set_subtitle(&format!("Live CPU Temperature: {:.1}°C", temp));
+            let i18n = get_i18n(st.language);
+            thermal_label_row.set_subtitle(&format!("{}{:.1}°C", i18n.thermal_prefix, temp));
             if st.thermal_enabled {
                 let heat_color = temp_to_color(temp);
                 st.settings.color = heat_color;
