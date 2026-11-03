@@ -237,3 +237,9 @@ pub fn get_keys() -> Vec<KeySpec> {
 
     keys
 }
+
+pub fn normalized_center(key: &KeySpec) -> (f32, f32) {
+    let cx = key.x + key.w / 2.0;
+    let cy = key.y + key.h / 2.0;
+    (cx / WIDTH, cy / HEIGHT)
+}

@@ -620,15 +620,17 @@ pub fn build_scene(settings: &Settings) -> Scene {
 
     match settings.effect.as_str() {
         "static" => {
+            // Reliable solid color across all hardware revisions (KLC and ALC Lightbar/Logo)
+            let (tr, _) = fade(color, &[(color, 1000)]);
+            let mut effects = HashMap::new();
+            effects.insert(0, Effect::new(color, tr, None));
             let keys = all_keys_matching(|| Key {
                 color,
-                mode: protocol::MODE_STATIC,
+                mode: protocol::MODE_EFFECT,
+                effect: 0,
                 ..Default::default()
             });
-            Scene {
-                effects: HashMap::new(),
-                keys,
-            }
+            Scene { effects, keys }
         }
         "reactive" => {
             let raw_high = parse_color(&settings.highlight).unwrap_or((255, 255, 255));
@@ -2120,5 +2122,124 @@ pub fn build_scene(settings: &Settings) -> Scene {
                 keys,
             }
         }
+    }
+}
+
+pub type EffectSegment = (u16, u16, (i32, i32, i32), (i8, i8, i8));
+
+pub struct CompiledEffect {
+    pub segments: Vec<EffectSegment>,
+    pub total: u16,
+}
+
+pub struct Simulator {
+    pub scene: Scene,
+    compiled_effects: HashMap<u8, CompiledEffect>,
+    delays: HashMap<u8, f32>,
+}
+
+impl Simulator {
+    pub fn new(scene: Scene) -> Self {
+        let mut compiled = HashMap::new();
+        for (&slot, effect) in &scene.effects {
+            let mut segments = Vec::new();
+            let mut t = 0u16;
+            let mut value = (
+                (effect.start.0 as i32) << 4,
+                (effect.start.1 as i32) << 4,
+                (effect.start.2 as i32) << 4,
+            );
+            for tr in &effect.transitions {
+                segments.push((t, tr.duration, value, tr.slope));
+                value = (
+                    value.0 + (tr.slope.0 as i32) * (tr.duration as i32),
+                    value.1 + (tr.slope.1 as i32) * (tr.duration as i32),
+                    value.2 + (tr.slope.2 as i32) * (tr.duration as i32),
+                );
+                t = t.saturating_add(tr.duration);
+            }
+            compiled.insert(
+                slot,
+                CompiledEffect {
+                    segments,
+                    total: t.max(1),
+                },
+            );
+        }
+
+        let mut delays = HashMap::new();
+        for key in layout::get_keys() {
+            if let Some(k) = scene.keys.get(&key.code) {
+                if k.mode == protocol::MODE_EFFECT {
+                    if let Some(effect) = scene.effects.get(&k.effect) {
+                        delays.insert(key.code, Self::calc_delay(&key, effect));
+                    }
+                }
+            }
+        }
+
+        Self {
+            scene,
+            compiled_effects: compiled,
+            delays,
+        }
+    }
+
+    fn calc_delay(key: &layout::KeySpec, effect: &Effect) -> f32 {
+        let wave = match &effect.wave {
+            Some(w) if w.along_x || w.along_y => w,
+            _ => return 0.0,
+        };
+        let (kx, ky) = layout::normalized_center(key);
+        let dx = if wave.along_x {
+            (kx - wave.x) * protocol::WAVE_X_MAX as f32
+        } else {
+            0.0
+        };
+        let dy = if wave.along_y {
+            (ky - wave.y) * protocol::WAVE_Y_MAX as f32
+        } else {
+            0.0
+        };
+        let length = protocol::WAVELENGTH_MIN
+            + wave.wavelength * (protocol::WAVELENGTH_MAX - protocol::WAVELENGTH_MIN);
+        let total: u32 = effect.transitions.iter().map(|tr| tr.duration as u32).sum();
+        let phase = dx.hypot(dy) / (length * 4.0);
+        let signed_phase = if wave.inward { -phase } else { phase };
+        signed_phase * (total as f32)
+    }
+
+    pub fn color(&self, code: u8, seconds: f32) -> (u8, u8, u8) {
+        let key = match self.scene.keys.get(&code) {
+            Some(k) => k,
+            None => return BLACK,
+        };
+
+        if key.mode == protocol::MODE_EFFECT {
+            if let Some(ce) = self.compiled_effects.get(&key.effect) {
+                let delay = self.delays.get(&code).copied().unwrap_or(0.0);
+                let units = (seconds / TIME_UNIT) - delay;
+                let total = ce.total as f32;
+                let u = ((units % total) + total) % total;
+                let u_u16 = u as u16;
+
+                for &(t0, duration, value, slope) in &ce.segments {
+                    if u_u16 < t0.saturating_add(duration) {
+                        let dt = (u_u16.saturating_sub(t0)) as i32;
+                        let r = (((value.0 + (slope.0 as i32) * dt) / 16).clamp(0, 255)) as u8;
+                        let g = (((value.1 + (slope.1 as i32) * dt) / 16).clamp(0, 255)) as u8;
+                        let b = (((value.2 + (slope.2 as i32) * dt) / 16).clamp(0, 255)) as u8;
+                        return (r, g, b);
+                    }
+                }
+                if let Some(&(_, _, val, _)) = ce.segments.last() {
+                    let r = ((val.0 / 16).clamp(0, 255)) as u8;
+                    let g = ((val.1 / 16).clamp(0, 255)) as u8;
+                    let b = ((val.2 / 16).clamp(0, 255)) as u8;
+                    return (r, g, b);
+                }
+            }
+        }
+        key.color
     }
 }

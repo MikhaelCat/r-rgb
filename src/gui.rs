@@ -1,7 +1,9 @@
 use std::cell::RefCell;
 use std::rc::Rc;
+use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::{Arc, Mutex};
 use std::thread;
+use std::time::Instant;
 
 use gtk4::glib;
 use gtk4::prelude::*;
@@ -11,11 +13,11 @@ use libadwaita::{
 };
 
 use crate::device::MultiDeviceManager;
-use crate::effects::{build_scene, EFFECTS};
+use crate::effects::{build_scene, Simulator, EFFECTS};
 use crate::layout::{get_keys, HEIGHT, WIDTH};
 use crate::settings::{
-    self, default_config_path, default_profiles_path, format_color, load_app_data, parse_color,
-    save_app_data, AppData, Settings, DIRECTIONS,
+    self, default_config_path, default_profiles_path, format_color, load_app_data, save_app_data,
+    AppData, Settings, DIRECTIONS,
 };
 
 const SWATCHES: &[(&str, &str)] = &[
@@ -242,6 +244,58 @@ fn get_category_translation(
     }
 }
 
+struct HardwareQueue {
+    counter: AtomicUsize,
+    pending: Mutex<Option<Settings>>,
+}
+
+static HW_QUEUE: std::sync::OnceLock<HardwareQueue> = std::sync::OnceLock::new();
+
+fn get_hw_queue() -> &'static HardwareQueue {
+    HW_QUEUE.get_or_init(|| HardwareQueue {
+        counter: AtomicUsize::new(0),
+        pending: Mutex::new(None),
+    })
+}
+
+fn schedule_hardware_apply(settings: &Settings) {
+    let queue = get_hw_queue();
+    {
+        let mut p = queue.pending.lock().unwrap();
+        *p = Some(settings.clone());
+    }
+    let ver = queue.counter.fetch_add(1, Ordering::SeqCst) + 1;
+    thread::spawn(move || {
+        // Debounce rapid UI inputs (sliders/color pickers) by 35ms
+        thread::sleep(std::time::Duration::from_millis(35));
+        let q = get_hw_queue();
+        if q.counter.load(Ordering::SeqCst) != ver {
+            return;
+        }
+
+        let target = {
+            let mut p = q.pending.lock().unwrap();
+            p.take()
+        };
+
+        if let Some(s) = target {
+            if let Ok(mut manager) = MultiDeviceManager::load_all() {
+                if s.independent_zones && s.bar_color.is_some() {
+                    let mut bar_settings = s.clone();
+                    bar_settings.effect = "static".to_string();
+                    bar_settings.color = s.bar_color.clone().unwrap_or_else(|| s.color.clone());
+                    let kb_scene = build_scene(&s);
+                    let bar_scene = build_scene(&bar_settings);
+                    let _ = manager.apply_scenes_zoned(&kb_scene, &bar_scene);
+                } else {
+                    let scene = build_scene(&s);
+                    let _ = manager.apply_scene(&scene);
+                }
+            }
+        }
+    });
+}
+
 struct State {
     settings: Settings,
     config_path: std::path::PathBuf,
@@ -250,6 +304,9 @@ struct State {
     thermal_enabled: bool,
     current_temp: f32,
     language: Language,
+    simulator: Simulator,
+    bar_simulator: Simulator,
+    start_time: Instant,
 }
 
 pub fn run_gui() -> glib::ExitCode {
@@ -259,25 +316,6 @@ pub fn run_gui() -> glib::ExitCode {
 
     app.connect_activate(build_ui);
     app.run_with_args(&["rrgb"])
-}
-
-fn apply_hardware(settings: &Settings) {
-    if let Ok(mut manager) = MultiDeviceManager::load_all() {
-        if settings.independent_zones && settings.bar_color.is_some() {
-            let mut bar_settings = settings.clone();
-            bar_settings.effect = "static".to_string();
-            bar_settings.color = settings
-                .bar_color
-                .clone()
-                .unwrap_or_else(|| settings.color.clone());
-            let kb_scene = build_scene(settings);
-            let bar_scene = build_scene(&bar_settings);
-            let _ = manager.apply_scenes_zoned(&kb_scene, &bar_scene);
-        } else {
-            let scene = build_scene(settings);
-            let _ = manager.apply_scene(&scene);
-        }
-    }
 }
 
 fn read_cpu_temp() -> Option<f32> {
@@ -322,6 +360,14 @@ fn build_ui(app: &Application) {
     let app_data = load_app_data(&profiles_path);
     let initial_lang = Language::parse_code(&app_data.language);
 
+    let init_kb_scene = build_scene(&initial_settings);
+    let mut init_bar_settings = initial_settings.clone();
+    if initial_settings.independent_zones && initial_settings.bar_color.is_some() {
+        init_bar_settings.effect = "static".to_string();
+        init_bar_settings.color = initial_settings.bar_color.clone().unwrap();
+    }
+    let init_bar_scene = build_scene(&init_bar_settings);
+
     let state = Arc::new(Mutex::new(State {
         settings: initial_settings.clone(),
         config_path,
@@ -330,6 +376,9 @@ fn build_ui(app: &Application) {
         thermal_enabled: false,
         current_temp: 45.0,
         language: initial_lang,
+        simulator: Simulator::new(init_kb_scene),
+        bar_simulator: Simulator::new(init_bar_scene),
+        start_time: Instant::now(),
     }));
 
     let cur_i18n = get_i18n(initial_lang);
@@ -383,7 +432,7 @@ fn build_ui(app: &Application) {
     content_box.append(&lang_group);
 
     // ========================================================
-    // Interactive Live Preview Canvas (DrawingArea)
+    // Interactive Real-Time Animated Preview Canvas
     // ========================================================
     let preview_group = PreferencesGroup::builder()
         .title(cur_i18n.preview_group_title)
@@ -400,12 +449,9 @@ fn build_ui(app: &Application) {
     let keys = get_keys();
     drawing_area.set_draw_func(move |_area, cr, width, height| {
         let st = state_draw.lock().unwrap();
-        let (r, g, b) = parse_color(&st.settings.color).unwrap_or((0, 255, 160));
-        let bright = st.settings.brightness.clamp(0.05, 1.0);
-        let rf = (r as f64 / 255.0) * bright as f64;
-        let gf = (g as f64 / 255.0) * bright as f64;
-        let bf = (b as f64 / 255.0) * bright as f64;
+        let elapsed = st.start_time.elapsed().as_secs_f32();
         let power_on = st.settings.enabled;
+        let bright = st.settings.brightness.clamp(0.05, 1.0) as f64;
 
         // Background chassis
         cr.set_source_rgb(0.08, 0.08, 0.10);
@@ -431,7 +477,11 @@ fn build_ui(app: &Application) {
             let kh = (k.h as f64) * scale_y - 2.0;
 
             if power_on {
-                cr.set_source_rgb(rf * 0.9, gf * 0.9, bf * 0.9);
+                let (r, g, b) = st.simulator.color(k.code, elapsed);
+                let rf = (r as f64 / 255.0) * bright;
+                let gf = (g as f64 / 255.0) * bright;
+                let bf = (b as f64 / 255.0) * bright;
+                cr.set_source_rgb(rf, gf, bf);
             } else {
                 cr.set_source_rgb(0.15, 0.15, 0.17);
             }
@@ -451,20 +501,15 @@ fn build_ui(app: &Application) {
         let bar_x = pad_x + (kb_w - bar_w) / 2.0;
         let bar_h = 7.0;
 
-        let (br, bg, bb) = if st.settings.independent_zones {
-            if let Some(ref bc) = st.settings.bar_color {
-                parse_color(bc).unwrap_or((r, g, b))
-            } else {
-                (r, g, b)
-            }
-        } else {
-            (r, g, b)
-        };
-
         if power_on {
-            let brf = (br as f64 / 255.0) * bright as f64;
-            let bgf = (bg as f64 / 255.0) * bright as f64;
-            let bbf = (bb as f64 / 255.0) * bright as f64;
+            let (br, bg, bb) = if st.settings.independent_zones {
+                st.bar_simulator.color(0x04, elapsed)
+            } else {
+                st.simulator.color(0x04, elapsed)
+            };
+            let brf = (br as f64 / 255.0) * bright;
+            let bgf = (bg as f64 / 255.0) * bright;
+            let bbf = (bb as f64 / 255.0) * bright;
             cr.set_source_rgb(brf, bgf, bbf);
         } else {
             cr.set_source_rgb(0.18, 0.18, 0.20);
@@ -481,6 +526,30 @@ fn build_ui(app: &Application) {
 
     preview_group.add(&drawing_area);
     content_box.append(&preview_group);
+
+    // Continuous 30fps animation ticker for the canvas preview
+    let draw_ticker = drawing_area.clone();
+    glib::timeout_add_local(std::time::Duration::from_millis(33), move || {
+        draw_ticker.queue_draw();
+        glib::ControlFlow::Continue
+    });
+
+    // Helper to refresh simulators
+    let update_simulators = {
+        let state = state.clone();
+        Rc::new(move || {
+            let mut st = state.lock().unwrap();
+            let kb_scene = build_scene(&st.settings);
+            let mut bar_settings = st.settings.clone();
+            if st.settings.independent_zones && st.settings.bar_color.is_some() {
+                bar_settings.effect = "static".to_string();
+                bar_settings.color = st.settings.bar_color.clone().unwrap();
+            }
+            let bar_scene = build_scene(&bar_settings);
+            st.simulator = Simulator::new(kb_scene);
+            st.bar_simulator = Simulator::new(bar_scene);
+        })
+    };
 
     // ========================================================
     // Custom User Profiles (Save/Load/Delete)
@@ -700,18 +769,22 @@ fn build_ui(app: &Application) {
         .margin_bottom(8)
         .build();
 
+    let update_sim_color = update_simulators.clone();
     for &(label, hex) in SWATCHES {
         let btn = gtk4::Button::with_label(label);
         let st_clone = state.clone();
         let color_btn_ref = color_btn.clone();
-        let draw_ref = drawing_area.clone();
         let hex_owned = hex.to_string();
+        let update_sim = update_sim_color.clone();
         btn.connect_clicked(move |_| {
-            let mut st = st_clone.lock().unwrap();
-            st.settings.color = hex_owned.clone();
-            let _ = settings::save(&st.settings, &st.config_path);
-            let s_copy = st.settings.clone();
-            thread::spawn(move || apply_hardware(&s_copy));
+            let s_copy = {
+                let mut st = st_clone.lock().unwrap();
+                st.settings.color = hex_owned.clone();
+                let _ = settings::save(&st.settings, &st.config_path);
+                st.settings.clone()
+            };
+            schedule_hardware_apply(&s_copy);
+            update_sim();
 
             if let Ok(rgb) = settings::parse_color(&hex_owned) {
                 let rgba = gtk4::gdk::RGBA::new(
@@ -722,7 +795,6 @@ fn build_ui(app: &Application) {
                 );
                 color_btn_ref.set_rgba(&rgba);
             }
-            draw_ref.queue_draw();
         });
         flow.append(&btn);
     }
@@ -749,12 +821,13 @@ fn build_ui(app: &Application) {
 
     // Refresh Favorites List in fav_expander
     let fav_rows: Rc<RefCell<Vec<ActionRow>>> = Rc::new(RefCell::new(Vec::new()));
+    let update_sim_fav = update_simulators.clone();
     let refresh_favorites_view = {
         let fav_expander = fav_expander.clone();
         let state = state.clone();
         let first_check = first_check.clone();
         let fav_rows = fav_rows.clone();
-        let draw_ref = drawing_area.clone();
+        let update_sim = update_sim_fav.clone();
         Rc::new(move || {
             // Remove existing rows
             for r in fav_rows.borrow().iter() {
@@ -799,15 +872,17 @@ fn build_ui(app: &Application) {
 
                     let eff_id = eff.id.to_string();
                     let st_clone = state.clone();
-                    let draw = draw_ref.clone();
+                    let update_sim_inner = update_sim.clone();
                     check.connect_toggled(move |btn| {
                         if btn.is_active() {
-                            let mut st = st_clone.lock().unwrap();
-                            st.settings.effect = eff_id.clone();
-                            let _ = settings::save(&st.settings, &st.config_path);
-                            let s_copy = st.settings.clone();
-                            thread::spawn(move || apply_hardware(&s_copy));
-                            draw.queue_draw();
+                            let s_copy = {
+                                let mut st = st_clone.lock().unwrap();
+                                st.settings.effect = eff_id.clone();
+                                let _ = settings::save(&st.settings, &st.config_path);
+                                st.settings.clone()
+                            };
+                            schedule_hardware_apply(&s_copy);
+                            update_sim_inner();
                         }
                     });
 
@@ -835,6 +910,7 @@ fn build_ui(app: &Application) {
         "Harmonies",
     ];
 
+    let update_sim_cat = update_simulators.clone();
     for cat_name in categories {
         let cat_effects: Vec<&crate::effects::EffectInfo> =
             EFFECTS.iter().filter(|e| e.category == cat_name).collect();
@@ -901,15 +977,17 @@ fn build_ui(app: &Application) {
 
             let eff_id = eff.id.to_string();
             let st_clone = state.clone();
-            let draw_ref = drawing_area.clone();
+            let update_sim_inner = update_sim_cat.clone();
             check.connect_toggled(move |btn| {
                 if btn.is_active() {
-                    let mut st = st_clone.lock().unwrap();
-                    st.settings.effect = eff_id.clone();
-                    let _ = settings::save(&st.settings, &st.config_path);
-                    let s_copy = st.settings.clone();
-                    thread::spawn(move || apply_hardware(&s_copy));
-                    draw_ref.queue_draw();
+                    let s_copy = {
+                        let mut st = st_clone.lock().unwrap();
+                        st.settings.effect = eff_id.clone();
+                        let _ = settings::save(&st.settings, &st.config_path);
+                        st.settings.clone()
+                    };
+                    schedule_hardware_apply(&s_copy);
+                    update_sim_inner();
                 }
             });
 
@@ -1018,7 +1096,7 @@ fn build_ui(app: &Application) {
         zones_group_ref.set_title(i18n.zones_group_title);
         zones_group_ref.set_description(Some(i18n.zones_group_desc));
         zones_switch_ref.set_title(i18n.zones_switch_title);
-        zones_switch_subtitle_ref(&zones_switch_ref, i18n.zones_switch_subtitle);
+        zones_switch_ref.set_subtitle(i18n.zones_switch_subtitle);
         bar_row_ref.set_title(i18n.zones_bar_title);
         bar_row_ref.set_subtitle(i18n.zones_bar_subtitle);
 
@@ -1057,15 +1135,11 @@ fn build_ui(app: &Application) {
         refresh_favs_lang();
     });
 
-    fn zones_switch_subtitle_ref(row: &SwitchRow, subtitle: &str) {
-        row.set_subtitle(subtitle);
-    }
-
     // ========================================================
-    // Connect remaining Event Handlers
+    // Connect remaining Event Handlers with Debounced Apply
     // ========================================================
     let st_picker = state.clone();
-    let draw_picker = drawing_area.clone();
+    let update_sim_picker = update_simulators.clone();
     color_btn.connect_notify_local(Some("rgba"), move |btn, _| {
         let rgba = btn.rgba();
         let r = (rgba.red() * 255.0).round().clamp(0.0, 255.0) as u8;
@@ -1073,16 +1147,18 @@ fn build_ui(app: &Application) {
         let b = (rgba.blue() * 255.0).round().clamp(0.0, 255.0) as u8;
         let hex = format!("#{:02x}{:02x}{:02x}", r, g, b);
 
-        let mut st = st_picker.lock().unwrap();
-        st.settings.color = hex;
-        let _ = settings::save(&st.settings, &st.config_path);
-        let s_copy = st.settings.clone();
-        thread::spawn(move || apply_hardware(&s_copy));
-        draw_picker.queue_draw();
+        let s_copy = {
+            let mut st = st_picker.lock().unwrap();
+            st.settings.color = hex;
+            let _ = settings::save(&st.settings, &st.config_path);
+            st.settings.clone()
+        };
+        schedule_hardware_apply(&s_copy);
+        update_sim_picker();
     });
 
     let st_bar_color = state.clone();
-    let draw_bar = drawing_area.clone();
+    let update_sim_bar = update_simulators.clone();
     bar_color_btn.connect_notify_local(Some("rgba"), move |btn, _| {
         let rgba = btn.rgba();
         let r = (rgba.red() * 255.0).round().clamp(0.0, 255.0) as u8;
@@ -1090,68 +1166,82 @@ fn build_ui(app: &Application) {
         let b = (rgba.blue() * 255.0).round().clamp(0.0, 255.0) as u8;
         let hex = format!("#{:02x}{:02x}{:02x}", r, g, b);
 
-        let mut st = st_bar_color.lock().unwrap();
-        st.settings.bar_color = Some(hex);
-        let _ = settings::save(&st.settings, &st.config_path);
-        let s_copy = st.settings.clone();
-        thread::spawn(move || apply_hardware(&s_copy));
-        draw_bar.queue_draw();
+        let s_copy = {
+            let mut st = st_bar_color.lock().unwrap();
+            st.settings.bar_color = Some(hex);
+            let _ = settings::save(&st.settings, &st.config_path);
+            st.settings.clone()
+        };
+        schedule_hardware_apply(&s_copy);
+        update_sim_bar();
     });
 
     let st_zones = state.clone();
     let bar_color_btn_ref = bar_color_btn.clone();
-    let draw_zones = drawing_area.clone();
+    let update_sim_zones = update_simulators.clone();
     zones_switch.connect_notify_local(Some("active"), move |row, _| {
         let active = row.is_active();
         bar_color_btn_ref.set_sensitive(active);
-        let mut st = st_zones.lock().unwrap();
-        st.settings.independent_zones = active;
-        let _ = settings::save(&st.settings, &st.config_path);
-        let s_copy = st.settings.clone();
-        thread::spawn(move || apply_hardware(&s_copy));
-        draw_zones.queue_draw();
+        let s_copy = {
+            let mut st = st_zones.lock().unwrap();
+            st.settings.independent_zones = active;
+            let _ = settings::save(&st.settings, &st.config_path);
+            st.settings.clone()
+        };
+        schedule_hardware_apply(&s_copy);
+        update_sim_zones();
     });
 
     let st_power = state.clone();
-    let draw_power = drawing_area.clone();
     power_row.connect_notify_local(Some("active"), move |row, _| {
-        let mut st = st_power.lock().unwrap();
-        st.settings.enabled = row.is_active();
-        let _ = settings::save(&st.settings, &st.config_path);
-        let s_copy = st.settings.clone();
-        thread::spawn(move || apply_hardware(&s_copy));
-        draw_power.queue_draw();
+        let s_copy = {
+            let mut st = st_power.lock().unwrap();
+            st.settings.enabled = row.is_active();
+            let _ = settings::save(&st.settings, &st.config_path);
+            st.settings.clone()
+        };
+        schedule_hardware_apply(&s_copy);
     });
 
     let st_bright = state.clone();
-    let draw_bright = drawing_area.clone();
+    let update_sim_bright = update_simulators.clone();
     brightness_scale.connect_value_changed(move |sc| {
-        let mut st = st_bright.lock().unwrap();
-        st.settings.brightness = (sc.value() / 100.0) as f32;
-        let _ = settings::save(&st.settings, &st.config_path);
-        let s_copy = st.settings.clone();
-        thread::spawn(move || apply_hardware(&s_copy));
-        draw_bright.queue_draw();
+        let s_copy = {
+            let mut st = st_bright.lock().unwrap();
+            st.settings.brightness = (sc.value() / 100.0) as f32;
+            let _ = settings::save(&st.settings, &st.config_path);
+            st.settings.clone()
+        };
+        schedule_hardware_apply(&s_copy);
+        update_sim_bright();
     });
 
     let st_speed = state.clone();
+    let update_sim_speed = update_simulators.clone();
     speed_scale.connect_value_changed(move |sc| {
-        let mut st = st_speed.lock().unwrap();
-        st.settings.speed = (sc.value() / 100.0) as f32;
-        let _ = settings::save(&st.settings, &st.config_path);
-        let s_copy = st.settings.clone();
-        thread::spawn(move || apply_hardware(&s_copy));
+        let s_copy = {
+            let mut st = st_speed.lock().unwrap();
+            st.settings.speed = (sc.value() / 100.0) as f32;
+            let _ = settings::save(&st.settings, &st.config_path);
+            st.settings.clone()
+        };
+        schedule_hardware_apply(&s_copy);
+        update_sim_speed();
     });
 
     let st_dir = state.clone();
+    let update_sim_dir = update_simulators.clone();
     dir_dropdown.connect_selected_notify(move |dd| {
         let idx = dd.selected() as usize;
         if let Some(&dir) = DIRECTIONS.get(idx) {
-            let mut st = st_dir.lock().unwrap();
-            st.settings.direction = dir.to_string();
-            let _ = settings::save(&st.settings, &st.config_path);
-            let s_copy = st.settings.clone();
-            thread::spawn(move || apply_hardware(&s_copy));
+            let s_copy = {
+                let mut st = st_dir.lock().unwrap();
+                st.settings.direction = dir.to_string();
+                let _ = settings::save(&st.settings, &st.config_path);
+                st.settings.clone()
+            };
+            schedule_hardware_apply(&s_copy);
+            update_sim_dir();
         }
     });
 
@@ -1161,7 +1251,7 @@ fn build_ui(app: &Application) {
     let bright_prof = brightness_scale.clone();
     let speed_prof = speed_scale.clone();
     let power_prof = power_row.clone();
-    let draw_prof = drawing_area.clone();
+    let update_sim_prof = update_simulators.clone();
     profile_dropdown.connect_selected_notify(move |dd| {
         let idx = dd.selected() as usize;
         let st = st_prof_sel.lock().unwrap();
@@ -1179,11 +1269,14 @@ fn build_ui(app: &Application) {
             };
             drop(st);
 
-            let mut st_mut = st_prof_sel.lock().unwrap();
-            st_mut.settings = target_settings.clone();
-            let _ = settings::save(&st_mut.settings, &st_mut.config_path);
-            let s_copy = st_mut.settings.clone();
-            thread::spawn(move || apply_hardware(&s_copy));
+            let s_copy = {
+                let mut st_mut = st_prof_sel.lock().unwrap();
+                st_mut.settings = target_settings.clone();
+                let _ = settings::save(&st_mut.settings, &st_mut.config_path);
+                st_mut.settings.clone()
+            };
+            schedule_hardware_apply(&s_copy);
+            update_sim_prof();
 
             // Sync controls
             power_prof.set_active(target_settings.enabled);
@@ -1198,7 +1291,6 @@ fn build_ui(app: &Application) {
                 );
                 color_btn_prof.set_rgba(&rgba);
             }
-            draw_prof.queue_draw();
         }
     });
 
@@ -1277,7 +1369,7 @@ fn build_ui(app: &Application) {
 
     let st_timer = state.clone();
     let thermal_label_row = thermal_switch.clone();
-    let draw_timer = drawing_area.clone();
+    let update_sim_thermal = update_simulators.clone();
     glib::timeout_add_local(std::time::Duration::from_millis(1500), move || {
         if let Some(temp) = read_cpu_temp() {
             let mut st = st_timer.lock().unwrap();
@@ -1288,8 +1380,9 @@ fn build_ui(app: &Application) {
                 let heat_color = temp_to_color(temp);
                 st.settings.color = heat_color;
                 let s_copy = st.settings.clone();
-                thread::spawn(move || apply_hardware(&s_copy));
-                draw_timer.queue_draw();
+                drop(st);
+                schedule_hardware_apply(&s_copy);
+                update_sim_thermal();
             }
         }
         glib::ControlFlow::Continue
