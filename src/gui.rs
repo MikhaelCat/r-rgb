@@ -11,6 +11,7 @@ use libadwaita::{
     ActionRow, Application, ApplicationWindow, ExpanderRow, HeaderBar, PreferencesGroup, SwitchRow,
 };
 
+use crate::audio::{build_audio_scene, AudioVisualizer};
 use crate::device::MultiDeviceManager;
 use crate::effects::{build_scene, Simulator, EFFECTS};
 use crate::layout::{get_keys, HEIGHT, WIDTH};
@@ -81,6 +82,10 @@ pub struct I18n {
     pub thermal_title: &'static str,
     pub thermal_polling: &'static str,
     pub thermal_prefix: &'static str,
+    pub audio_group_title: &'static str,
+    pub audio_group_desc: &'static str,
+    pub audio_title: &'static str,
+    pub audio_subtitle: &'static str,
     pub zones_group_title: &'static str,
     pub zones_group_desc: &'static str,
     pub zones_switch_title: &'static str,
@@ -135,6 +140,11 @@ pub fn get_i18n(lang: Language) -> I18n {
             thermal_title: "Термо-реактивный режим",
             thermal_polling: "Температура CPU: опрос датчиков...",
             thermal_prefix: "Температура CPU в реальном времени: ",
+            audio_group_title: "Аудио-визуализатор спектра",
+            audio_group_desc:
+                "Синхронизация подсветки с воспроизводимым звуком (PipeWire / PulseAudio)",
+            audio_title: "Реакция на звук и музыку",
+            audio_subtitle: "Живой 16-полосный эквалайзер на клавишах и световом баре",
             zones_group_title: "Независимые аппаратные зоны",
             zones_group_desc:
                 "Раздельный контроль клавиатуры и фронтального светового бара / логотипа",
@@ -190,6 +200,11 @@ pub fn get_i18n(lang: Language) -> I18n {
             thermal_title: "Thermal Reactive Mode",
             thermal_polling: "CPU Temperature: polling sensors...",
             thermal_prefix: "Live CPU Temperature: ",
+            audio_group_title: "Audio Spectrum Visualizer",
+            audio_group_desc:
+                "Synchronize illumination with live system audio (PipeWire / PulseAudio)",
+            audio_title: "Audio Reactive Mode",
+            audio_subtitle: "Live 16-band equalizer across keys and lightbar",
             zones_group_title: "Independent Hardware Zones",
             zones_group_desc:
                 "Separate control for per-key keyboard and front lightbar / dragon logo",
@@ -313,6 +328,9 @@ struct State {
     app_data: AppData,
     thermal_enabled: bool,
     current_temp: f32,
+    audio_enabled: bool,
+    audio_vis: Option<AudioVisualizer>,
+    audio_bands: [f32; 16],
     language: Language,
     simulator: Simulator,
     bar_simulator: Simulator,
@@ -385,6 +403,9 @@ fn build_ui(app: &Application) {
         app_data,
         thermal_enabled: false,
         current_temp: 45.0,
+        audio_enabled: false,
+        audio_vis: None,
+        audio_bands: [0.0; 16],
         language: initial_lang,
         simulator: Simulator::new(init_kb_scene),
         bar_simulator: Simulator::new(init_bar_scene),
@@ -487,7 +508,24 @@ fn build_ui(app: &Application) {
             let kh = (k.h as f64) * scale_y - 2.0;
 
             if power_on {
-                let (r, g, b) = st.simulator.color(k.code, elapsed);
+                let (r, g, b) = if st.audio_enabled {
+                    let cx = (k.x + k.w * 0.5) / WIDTH;
+                    let cy = (k.y + k.h * 0.5) / HEIGHT;
+                    let band_idx = ((cx * 16.0).floor() as usize).min(15);
+                    let level = st.audio_bands[band_idx];
+                    let height_threshold = 1.0 - cy;
+                    if level >= height_threshold * 0.85 {
+                        let heat = level.clamp(0.0, 1.0);
+                        let r = ((heat * 255.0) as u8).saturating_add(30);
+                        let g = ((1.0 - heat * 0.6) * 220.0) as u8;
+                        let b = ((1.0 - heat) * 255.0) as u8;
+                        (r, g, b)
+                    } else {
+                        (0, 8, 20)
+                    }
+                } else {
+                    st.simulator.color(k.code, elapsed)
+                };
                 let rf = (r as f64 / 255.0) * bright;
                 let gf = (g as f64 / 255.0) * bright;
                 let bf = (b as f64 / 255.0) * bright;
@@ -523,7 +561,21 @@ fn build_ui(app: &Application) {
         for i in 0..num_bar_segments {
             let sx = bar_x + (i as f64) * seg_w;
             if power_on {
-                let (br, bg, bb) = if st.settings.independent_zones {
+                let (br, bg, bb) = if st.audio_enabled {
+                    // Mirrored stereo equalizer bounce from center to edges
+                    let norm_pos = if i < 12 {
+                        (11 - i) as f32 / 11.0
+                    } else {
+                        (i - 12) as f32 / 11.0
+                    };
+                    let band_idx = ((norm_pos * 15.0).round() as usize).min(15);
+                    let level = st.audio_bands[band_idx];
+                    let heat = level.clamp(0.0, 1.0);
+                    let r = ((heat * 255.0) as u8).saturating_add(40);
+                    let g = ((1.0 - heat * 0.5) * 200.0) as u8;
+                    let b = ((1.0 - heat) * 255.0) as u8;
+                    (r, g, b)
+                } else if st.settings.independent_zones {
                     st.bar_simulator.color(0x04, elapsed)
                 } else {
                     let sample_key = horiz_keys[i % horiz_keys.len()];
@@ -663,6 +715,23 @@ fn build_ui(app: &Application) {
 
     thermal_group.add(&thermal_switch);
     content_box.append(&thermal_group);
+
+    // ========================================================
+    // Audio Reactive Visualizer (PipeWire / PulseAudio)
+    // ========================================================
+    let audio_group = PreferencesGroup::builder()
+        .title(cur_i18n.audio_group_title)
+        .description(cur_i18n.audio_group_desc)
+        .build();
+
+    let audio_switch = SwitchRow::builder()
+        .title(cur_i18n.audio_title)
+        .subtitle(cur_i18n.audio_subtitle)
+        .active(false)
+        .build();
+
+    audio_group.add(&audio_switch);
+    content_box.append(&audio_group);
 
     // ========================================================
     // Independent Device Zones (Keyboard vs Lightbar)
@@ -1067,6 +1136,8 @@ fn build_ui(app: &Application) {
     let bright_row_ref = brightness_row.clone();
     let thermal_group_ref = thermal_group.clone();
     let thermal_switch_ref = thermal_switch.clone();
+    let audio_group_ref = audio_group.clone();
+    let audio_switch_ref = audio_switch.clone();
     let zones_group_ref = zones_group.clone();
     let zones_switch_ref = zones_switch.clone();
     let bar_row_ref = bar_row.clone();
@@ -1119,6 +1190,11 @@ fn build_ui(app: &Application) {
         thermal_group_ref.set_title(i18n.thermal_group_title);
         thermal_group_ref.set_description(Some(i18n.thermal_group_desc));
         thermal_switch_ref.set_title(i18n.thermal_title);
+
+        audio_group_ref.set_title(i18n.audio_group_title);
+        audio_group_ref.set_description(Some(i18n.audio_group_desc));
+        audio_switch_ref.set_title(i18n.audio_title);
+        audio_switch_ref.set_subtitle(i18n.audio_subtitle);
 
         zones_group_ref.set_title(i18n.zones_group_title);
         zones_group_ref.set_description(Some(i18n.zones_group_desc));
@@ -1410,6 +1486,56 @@ fn build_ui(app: &Application) {
                 drop(st);
                 schedule_hardware_apply(&s_copy);
                 update_sim_thermal();
+            }
+        }
+        glib::ControlFlow::Continue
+    });
+
+    // Audio Reactive Toggle & Loop
+    let st_audio = state.clone();
+    audio_switch.connect_notify_local(Some("active"), move |row, _| {
+        let active = row.is_active();
+        let mut st = st_audio.lock().unwrap();
+        st.audio_enabled = active;
+        if active {
+            if st.audio_vis.is_none() {
+                let mut vis = AudioVisualizer::new();
+                vis.start();
+                st.audio_vis = Some(vis);
+            }
+        } else {
+            if let Some(mut vis) = st.audio_vis.take() {
+                vis.stop();
+            }
+            st.audio_bands = [0.0; 16];
+            // Restore static/effect profile to hardware
+            let s_copy = st.settings.clone();
+            drop(st);
+            schedule_hardware_apply(&s_copy);
+        }
+    });
+
+    // Audio animation ticker (30fps) for sampling spectrum and applying to hardware
+    let st_audio_ticker = state.clone();
+    let mut audio_hw_counter = 0u8;
+    glib::timeout_add_local(std::time::Duration::from_millis(33), move || {
+        let mut st = st_audio_ticker.lock().unwrap();
+        if st.audio_enabled {
+            if let Some(ref vis) = st.audio_vis {
+                let bands = vis.bands();
+                st.audio_bands = bands;
+                audio_hw_counter = (audio_hw_counter + 1) % 2; // ~15 FPS hardware update rate
+                if audio_hw_counter == 0 {
+                    let bright = st.settings.brightness;
+                    drop(st);
+                    // Update physical device directly without blocking GUI
+                    thread::spawn(move || {
+                        if let Ok(mut manager) = MultiDeviceManager::load_all() {
+                            let scene = build_audio_scene(&bands, bright);
+                            let _ = manager.apply_scene(&scene);
+                        }
+                    });
+                }
             }
         }
         glib::ControlFlow::Continue

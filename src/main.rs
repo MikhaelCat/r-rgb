@@ -1,4 +1,5 @@
-use clap::{Parser, Subcommand};
+use clap::{CommandFactory, Parser, Subcommand};
+use clap_complete::{generate, Shell};
 use std::process;
 
 use r_rgb::device::{find_all_devices, list_all_hid_candidates, MultiDeviceManager};
@@ -6,7 +7,7 @@ use r_rgb::effects::{build_scene, EFFECTS};
 use r_rgb::settings::{self, default_config_path, format_color, parse_color, DIRECTIONS};
 
 #[derive(Parser, Debug)]
-#[command(name = "rrgb", author = "MikhaelCat", version = "0.1.0")]
+#[command(name = "rrgb", author = "MikhaelCat", version = "1.0.0")]
 #[command(
     about = "Blazing-fast Rust controller for Linux RGB keyboards, lightbars, and dragon logos"
 )]
@@ -47,9 +48,16 @@ enum Commands {
     Gui,
     /// Live audio spectrum visualizer (PipeWire / PulseAudio)
     Audio,
+    /// Generate shell auto-completions (bash, zsh, fish, elvish, powershell)
+    Completions {
+        /// Shell to generate completions for
+        #[arg(value_enum)]
+        shell: Shell,
+    },
     /// Choose an effect and its options
     Set {
         /// Effect name (run 'rrgb effects' to see all 50 available hardware presets)
+        #[arg(value_parser = clap::builder::PossibleValuesParser::new(EFFECTS.iter().map(|e| e.id)))]
         effect: String,
 
         /// Main color in hex (e.g. ff8000, 00ffff)
@@ -69,7 +77,7 @@ enum Commands {
         brightness: Option<f32>,
 
         /// Wave direction (right, left, down, up, out, in)
-        #[arg(short, long)]
+        #[arg(short, long, value_parser = clap::builder::PossibleValuesParser::new(DIRECTIONS))]
         direction: Option<String>,
 
         /// Wave size (0-100)
@@ -259,6 +267,11 @@ fn main() {
                 eprintln!("Audio Visualizer error: {}", e);
                 process::exit(1);
             }
+        }
+        Some(Commands::Completions { shell }) => {
+            let mut cmd = Cli::command();
+            let bin_name = cmd.get_name().to_string();
+            generate(shell, &mut cmd, bin_name, &mut std::io::stdout());
         }
         Some(Commands::Set {
             effect,

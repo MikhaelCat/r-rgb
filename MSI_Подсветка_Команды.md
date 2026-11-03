@@ -39,6 +39,21 @@ rrgb gui
   ```bash
   rrgb apply
   ```
+- **Аудио-визуализатор реального времени (PipeWire / PulseAudio):**
+  ```bash
+  rrgb audio
+  ```
+- **Генерация автодополнений для терминала (Bash, Zsh, Fish):**
+  ```bash
+  # Для Bash
+  rrgb completions bash > ~/.local/share/bash-completion/completions/rrgb
+
+  # Для Zsh
+  rrgb completions zsh > ~/.zsh/completions/_rrgb
+
+  # Для Fish
+  rrgb completions fish > ~/.config/fish/completions/rrgb.fish
+  ```
 
 ---
 

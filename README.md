@@ -29,10 +29,12 @@
 - **🎨 50 Completely Unique Hardware Presets:** Meticulously designed lighting profiles across Core, Sci-Fi, Nature, Space, Ambient, Tactical, and Chromatic Harmonies — every effect features an individual color palette, spatial vectors, or zone-mapped key clusters.
 - **🖥️ Native Libadwaita GUI (`rrgb gui`):**
   - **Live Animated Canvas Preview:** Real-time 30 FPS rendering engine with physical wave propagation, keycap borders, and multi-segment Lightbar representation.
+  - **Live Audio Spectrum Equalizer:** Integrated real-time audio visualization with 16-band energy spectrum across keys and reactive lightbar bounce.
   - **Dedicated Lock-Free Worker Thread:** Non-blocking hardware dispatch queue with intelligent 30ms debouncing eliminates bus lock contention (`flock`) and guarantees fluid, freeze-free rapid preset switching.
   - **Runtime Localization (RU/EN):** Instant dynamic language switching saved persistently to your configuration.
   - **User Profiles & Pinned Favorites:** Save custom presets to `~/.config/rrgb/profiles.json` and pin frequent effects with one-click star icons.
   - **Thermal-Reactive Mode:** Dynamically synchronizes real-time CPU/GPU temperatures into color heatmaps.
+- **🐚 Comprehensive Shell Auto-Completions:** Native completions for Bash, Zsh, and Fish via `rrgb completions <shell>` with intelligent context-aware suggestions for all 50 effect names, directions, and color arguments.
 - **🛡️ Battle-Tested Reliability & Safety:** Audited with `cargo audit` (0 vulnerabilities), Criterion micro-benchmarks, and continuous 20,000-cycle memory stability stress tests in GitHub Actions CI with AddressSanitizer (ASan).
 
 ---
@@ -210,6 +212,12 @@ rrgb off                                 # Disable lighting
 rrgb status                              # Print active mode, brightness and hardware paths
 rrgb effects                             # List all 50 available hardware presets
 rrgb gui                                 # Launch the native GTK4/Adwaita GUI
+rrgb audio                               # Live audio spectrum visualizer (PipeWire / PulseAudio)
+
+# Shell Completions (Bash, Zsh, Fish)
+rrgb completions bash > ~/.local/share/bash-completion/completions/rrgb
+rrgb completions zsh  > ~/.zsh/completions/_rrgb
+rrgb completions fish > ~/.config/fish/completions/rrgb.fish
 
 # High-Performance Hardware Effects
 rrgb set cyberpunk -s 50 -d right        # Cyberpunk 2077 neon yellow/cyan flow
