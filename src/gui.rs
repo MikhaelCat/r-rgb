@@ -36,7 +36,7 @@ pub fn run_gui() -> glib::ExitCode {
         .build();
 
     app.connect_activate(build_ui);
-    app.run()
+    app.run_with_args(&["rrgb"])
 }
 
 fn apply_hardware(settings: &Settings) {
