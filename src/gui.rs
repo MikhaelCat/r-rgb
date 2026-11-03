@@ -169,49 +169,70 @@ fn build_ui(app: &Application) {
     color_group.add(&flow);
     content_box.append(&color_group);
 
-    // 4. Effects List (All 30 Presets)
-    let effects_group = PreferencesGroup::builder()
-        .title("Hardware Animation Presets (30)")
-        .description("Hardware offloaded profiles executed directly on the SteelSeries MCU")
-        .build();
+    // 4. Categorized Hardware Animation Presets (All 50 Presets)
+    let categories = [
+        ("Core", "Classics & Fundamentals"),
+        ("Sci-Fi", "Cyberpunk, Sci-Fi & Digital"),
+        ("Nature", "Nature & Atmospheric Elements"),
+        ("Space", "Astronomy & Deep Cosmos"),
+        ("Ambient", "Mood, Chill & Ambient"),
+        ("Tactical", "Tactical, Action & Dynamic"),
+        ("Harmonies", "Exotic Chromatic Harmonies"),
+    ];
 
     let mut first_check: Option<gtk4::CheckButton> = None;
-    for eff in EFFECTS {
-        let check = gtk4::CheckButton::builder()
-            .valign(gtk4::Align::Center)
-            .build();
-        if let Some(ref f) = first_check {
-            check.set_group(Some(f));
-        } else {
-            first_check = Some(check.clone());
+
+    for (cat_name, cat_desc) in categories {
+        let cat_effects: Vec<&crate::effects::EffectInfo> =
+            EFFECTS.iter().filter(|e| e.category == cat_name).collect();
+
+        if cat_effects.is_empty() {
+            continue;
         }
 
-        if eff.id == initial_settings.effect {
-            check.set_active(true);
-        }
-
-        let row = ActionRow::builder()
-            .title(eff.name)
-            .subtitle(eff.description)
-            .activatable_widget(&check)
+        let cat_group = PreferencesGroup::builder()
+            .title(format!("{} ({})", cat_name, cat_effects.len()))
+            .description(cat_desc)
             .build();
-        row.add_prefix(&check);
 
-        let eff_id = eff.id.to_string();
-        let st_clone = state.clone();
-        check.connect_toggled(move |btn| {
-            if btn.is_active() {
-                let mut st = st_clone.lock().unwrap();
-                st.settings.effect = eff_id.clone();
-                let _ = settings::save(&st.settings, &st.config_path);
-                let s_copy = st.settings.clone();
-                thread::spawn(move || apply_hardware(&s_copy));
+        for eff in cat_effects {
+            let check = gtk4::CheckButton::builder()
+                .valign(gtk4::Align::Center)
+                .build();
+            if let Some(ref f) = first_check {
+                check.set_group(Some(f));
+            } else {
+                first_check = Some(check.clone());
             }
-        });
 
-        effects_group.add(&row);
+            if eff.id == initial_settings.effect {
+                check.set_active(true);
+            }
+
+            let row = ActionRow::builder()
+                .title(eff.name)
+                .subtitle(eff.description)
+                .activatable_widget(&check)
+                .build();
+            row.add_prefix(&check);
+
+            let eff_id = eff.id.to_string();
+            let st_clone = state.clone();
+            check.connect_toggled(move |btn| {
+                if btn.is_active() {
+                    let mut st = st_clone.lock().unwrap();
+                    st.settings.effect = eff_id.clone();
+                    let _ = settings::save(&st.settings, &st.config_path);
+                    let s_copy = st.settings.clone();
+                    thread::spawn(move || apply_hardware(&s_copy));
+                }
+            });
+
+            cat_group.add(&row);
+        }
+
+        content_box.append(&cat_group);
     }
-    content_box.append(&effects_group);
 
     // Event Bindings
     let st_power = state.clone();

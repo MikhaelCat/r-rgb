@@ -17,6 +17,11 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      - name: Install System Dependencies (GTK4 & Libadwaita)
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libgtk-4-dev libadwaita-1-dev
+
       - name: Setup Rust toolchain
         uses: dtolnay/rust-toolchain@stable
         with:
@@ -49,8 +54,15 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      - name: Install System Dependencies (GTK4 & Libadwaita)
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libgtk-4-dev libadwaita-1-dev
+
       - name: Setup Nightly toolchain
         uses: dtolnay/rust-toolchain@nightly
+        with:
+          components: rust-src
 
       - name: Run tests with AddressSanitizer
         env:
@@ -64,6 +76,11 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+
+      - name: Install System Dependencies (GTK4 & Libadwaita)
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libgtk-4-dev libadwaita-1-dev
 
       - name: Setup Rust
         uses: dtolnay/rust-toolchain@stable

@@ -47,7 +47,7 @@ enum Commands {
     Gui,
     /// Choose an effect and its options
     Set {
-        /// Effect name (static, breathing, spectrum, rainbow, wave, starlight, reactive, disco, fire, aurora, neon, police, pulse, matrix)
+        /// Effect name (run 'rrgb effects' to see all 50 available hardware presets)
         effect: String,
 
         /// Main color in hex (e.g. ff8000, 00ffff)

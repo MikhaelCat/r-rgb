@@ -28,27 +28,10 @@ mod tests {
 
     #[test]
     fn test_all_effects_generate_valid_scenes() {
-        let effects = [
-            "static",
-            "breathing",
-            "spectrum",
-            "rainbow",
-            "wave",
-            "starlight",
-            "reactive",
-            "disco",
-            "fire",
-            "aurora",
-            "neon",
-            "police",
-            "pulse",
-            "matrix",
-        ];
-
-        for &eff in &effects {
+        for eff in r_steelseries::EFFECTS {
             let s = Settings {
                 enabled: true,
-                effect: eff.to_string(),
+                effect: eff.id.to_string(),
                 color: "#00ffff".to_string(),
                 highlight: "#ffffff".to_string(),
                 speed: 0.5,
@@ -57,13 +40,13 @@ mod tests {
                 wave_size: 0.5,
             };
             let scene = build_scene(&s);
-            assert!(!scene.keys.is_empty(), "Effect {} produced no keys", eff);
+            assert!(!scene.keys.is_empty(), "Effect {} produced no keys", eff.id);
 
             let k_pkts = key_packets(&scene.keys);
             assert!(
                 !k_pkts.is_empty(),
                 "Effect {} generated no key packets",
-                eff
+                eff.id
             );
             for pkt in &k_pkts {
                 assert_eq!(pkt.len(), FEATURE_SIZE);
