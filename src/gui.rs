@@ -1,7 +1,6 @@
 use std::cell::RefCell;
 use std::rc::Rc;
-use std::sync::atomic::{AtomicUsize, Ordering};
-use std::sync::{Arc, Mutex};
+use std::sync::{Arc, Condvar, Mutex};
 use std::thread;
 use std::time::Instant;
 
@@ -244,56 +243,67 @@ fn get_category_translation(
     }
 }
 
-struct HardwareQueue {
-    counter: AtomicUsize,
-    pending: Mutex<Option<Settings>>,
+struct HardwareWorker {
+    condvar: Condvar,
+    state: Mutex<Option<Settings>>,
 }
 
-static HW_QUEUE: std::sync::OnceLock<HardwareQueue> = std::sync::OnceLock::new();
+static HW_WORKER: std::sync::OnceLock<HardwareWorker> = std::sync::OnceLock::new();
 
-fn get_hw_queue() -> &'static HardwareQueue {
-    HW_QUEUE.get_or_init(|| HardwareQueue {
-        counter: AtomicUsize::new(0),
-        pending: Mutex::new(None),
+fn get_hw_worker() -> &'static HardwareWorker {
+    HW_WORKER.get_or_init(|| {
+        let worker = HardwareWorker {
+            condvar: Condvar::new(),
+            state: Mutex::new(None),
+        };
+
+        thread::Builder::new()
+            .name("rrgb-hw-worker".to_string())
+            .spawn(|| {
+                let w = get_hw_worker();
+                loop {
+                    let mut lock = w.state.lock().unwrap();
+                    while lock.is_none() {
+                        lock = w.condvar.wait(lock).unwrap();
+                    }
+                    drop(lock);
+
+                    // Debounce rapid user events (sliders, fast clicking)
+                    thread::sleep(std::time::Duration::from_millis(30));
+
+                    let mut lock = w.state.lock().unwrap();
+                    let target = lock.take();
+                    drop(lock);
+
+                    if let Some(s) = target {
+                        if let Ok(mut manager) = MultiDeviceManager::load_all() {
+                            if s.independent_zones {
+                                let mut bar_settings = s.clone();
+                                bar_settings.effect = "static".to_string();
+                                bar_settings.color =
+                                    s.bar_color.clone().unwrap_or_else(|| s.color.clone());
+                                let kb_scene = build_scene(&s);
+                                let bar_scene = build_scene(&bar_settings);
+                                let _ = manager.apply_scenes_zoned(&kb_scene, &bar_scene);
+                            } else {
+                                let scene = build_scene(&s);
+                                let _ = manager.apply_scene(&scene);
+                            }
+                        }
+                    }
+                }
+            })
+            .expect("failed to spawn rrgb hardware worker thread");
+
+        worker
     })
 }
 
 fn schedule_hardware_apply(settings: &Settings) {
-    let queue = get_hw_queue();
-    {
-        let mut p = queue.pending.lock().unwrap();
-        *p = Some(settings.clone());
-    }
-    let ver = queue.counter.fetch_add(1, Ordering::SeqCst) + 1;
-    thread::spawn(move || {
-        // Debounce rapid UI inputs (sliders/color pickers) by 35ms
-        thread::sleep(std::time::Duration::from_millis(35));
-        let q = get_hw_queue();
-        if q.counter.load(Ordering::SeqCst) != ver {
-            return;
-        }
-
-        let target = {
-            let mut p = q.pending.lock().unwrap();
-            p.take()
-        };
-
-        if let Some(s) = target {
-            if let Ok(mut manager) = MultiDeviceManager::load_all() {
-                if s.independent_zones && s.bar_color.is_some() {
-                    let mut bar_settings = s.clone();
-                    bar_settings.effect = "static".to_string();
-                    bar_settings.color = s.bar_color.clone().unwrap_or_else(|| s.color.clone());
-                    let kb_scene = build_scene(&s);
-                    let bar_scene = build_scene(&bar_settings);
-                    let _ = manager.apply_scenes_zoned(&kb_scene, &bar_scene);
-                } else {
-                    let scene = build_scene(&s);
-                    let _ = manager.apply_scene(&scene);
-                }
-            }
-        }
-    });
+    let worker = get_hw_worker();
+    let mut lock = worker.state.lock().unwrap();
+    *lock = Some(settings.clone());
+    worker.condvar.notify_one();
 }
 
 struct State {
@@ -495,27 +505,40 @@ fn build_ui(app: &Application) {
             let _ = cr.stroke();
         }
 
-        // Front Lightbar Zone
+        // Front Lightbar Zone (Multi-segment gradient / dynamic wave representation)
         let bar_y = pad_y + kb_h + 10.0;
         let bar_w = kb_w * 0.70;
         let bar_x = pad_x + (kb_w - bar_w) / 2.0;
         let bar_h = 7.0;
 
-        if power_on {
-            let (br, bg, bb) = if st.settings.independent_zones {
-                st.bar_simulator.color(0x04, elapsed)
+        let num_bar_segments = 24;
+        let seg_w = bar_w / (num_bar_segments as f64);
+
+        // Reference key scancodes mapping horizontally across keyboard width for mirrored waves
+        let horiz_keys: &[u8] = &[
+            0x29, 0x3A, 0x3B, 0x3C, 0x3D, 0x3E, 0x3F, 0x40, 0x41, 0x42, 0x43, 0x44, 0x45, 0x46,
+            0x47, 0x48, 0x49, 0x4A, 0x4B, 0x53, 0x54, 0x55, 0x56, 0x57,
+        ];
+
+        for i in 0..num_bar_segments {
+            let sx = bar_x + (i as f64) * seg_w;
+            if power_on {
+                let (br, bg, bb) = if st.settings.independent_zones {
+                    st.bar_simulator.color(0x04, elapsed)
+                } else {
+                    let sample_key = horiz_keys[i % horiz_keys.len()];
+                    st.simulator.color(sample_key, elapsed)
+                };
+                let brf = (br as f64 / 255.0) * bright;
+                let bgf = (bg as f64 / 255.0) * bright;
+                let bbf = (bb as f64 / 255.0) * bright;
+                cr.set_source_rgb(brf, bgf, bbf);
             } else {
-                st.simulator.color(0x04, elapsed)
-            };
-            let brf = (br as f64 / 255.0) * bright;
-            let bgf = (bg as f64 / 255.0) * bright;
-            let bbf = (bb as f64 / 255.0) * bright;
-            cr.set_source_rgb(brf, bgf, bbf);
-        } else {
-            cr.set_source_rgb(0.18, 0.18, 0.20);
+                cr.set_source_rgb(0.18, 0.18, 0.20);
+            }
+            cr.rectangle(sx, bar_y, seg_w + 0.5, bar_h);
+            let _ = cr.fill();
         }
-        cr.rectangle(bar_x, bar_y, bar_w, bar_h);
-        let _ = cr.fill();
 
         // Lightbar glow border
         cr.set_source_rgba(1.0, 1.0, 1.0, 0.25);
@@ -541,9 +564,13 @@ fn build_ui(app: &Application) {
             let mut st = state.lock().unwrap();
             let kb_scene = build_scene(&st.settings);
             let mut bar_settings = st.settings.clone();
-            if st.settings.independent_zones && st.settings.bar_color.is_some() {
+            if st.settings.independent_zones {
                 bar_settings.effect = "static".to_string();
-                bar_settings.color = st.settings.bar_color.clone().unwrap();
+                bar_settings.color = st
+                    .settings
+                    .bar_color
+                    .clone()
+                    .unwrap_or_else(|| st.settings.color.clone());
             }
             let bar_scene = build_scene(&bar_settings);
             st.simulator = Simulator::new(kb_scene);

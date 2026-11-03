@@ -116,8 +116,20 @@ fn apply_settings(
     loop {
         match MultiDeviceManager::load_all() {
             Ok(mut manager) => {
-                let scene = build_scene(settings);
-                manager.apply_scene(&scene)?;
+                if settings.independent_zones {
+                    let mut bar_settings = settings.clone();
+                    bar_settings.effect = "static".to_string();
+                    bar_settings.color = settings
+                        .bar_color
+                        .clone()
+                        .unwrap_or_else(|| settings.color.clone());
+                    let kb_scene = build_scene(settings);
+                    let bar_scene = build_scene(&bar_settings);
+                    manager.apply_scenes_zoned(&kb_scene, &bar_scene)?;
+                } else {
+                    let scene = build_scene(settings);
+                    manager.apply_scene(&scene)?;
+                }
                 if !quiet {
                     describe(settings);
                 }
