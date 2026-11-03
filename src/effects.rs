@@ -203,6 +203,97 @@ pub const EFFECTS: &[EffectInfo] = &[
         uses_speed: true,
         uses_direction: false,
     },
+    // 10 new presets bringing total to 30:
+    EffectInfo {
+        id: "blizzard",
+        name: "Arctic Blizzard",
+        description: "Icy polar crystalline whites, pale cyans and frosty blues",
+        uses_color: false,
+        uses_highlight: false,
+        uses_speed: true,
+        uses_direction: true,
+    },
+    EffectInfo {
+        id: "nebula",
+        name: "Cosmic Nebula",
+        description: "Deep galactic interstellar dust clouds of magenta and royal indigo",
+        uses_color: false,
+        uses_highlight: false,
+        uses_speed: true,
+        uses_direction: true,
+    },
+    EffectInfo {
+        id: "toxic",
+        name: "Toxic Biohazard",
+        description: "Radioactive acid lime green and sulfur yellow surging wave",
+        uses_color: false,
+        uses_highlight: false,
+        uses_speed: true,
+        uses_direction: true,
+    },
+    EffectInfo {
+        id: "sakura",
+        name: "Sakura Blossom",
+        description: "Delicate spring cherry blossom petaline pinks and white breeze",
+        uses_color: false,
+        uses_highlight: false,
+        uses_speed: true,
+        uses_direction: true,
+    },
+    EffectInfo {
+        id: "lightning",
+        name: "Thunderstorm",
+        description: "Electric high-voltage lightning flashes through dark stormy skies",
+        uses_color: false,
+        uses_highlight: false,
+        uses_speed: true,
+        uses_direction: false,
+    },
+    EffectInfo {
+        id: "solar",
+        name: "Solar Flare",
+        description: "Coronal mass ejection of brilliant solar gold, amber and blinding white",
+        uses_color: false,
+        uses_highlight: false,
+        uses_speed: true,
+        uses_direction: true,
+    },
+    EffectInfo {
+        id: "forest",
+        name: "Deep Forest",
+        description: "Organic lush woodland emerald, pine and mossy shadows",
+        uses_color: false,
+        uses_highlight: false,
+        uses_speed: true,
+        uses_direction: true,
+    },
+    EffectInfo {
+        id: "galaxy",
+        name: "Spiral Galaxy",
+        description: "Starry spiral arm revolving through deep midnight violet and cyan",
+        uses_color: false,
+        uses_highlight: false,
+        uses_speed: true,
+        uses_direction: true,
+    },
+    EffectInfo {
+        id: "firefly",
+        name: "Summer Fireflies",
+        description: "Enchanted nocturnal fireflies gently drifting across dark grass",
+        uses_color: false,
+        uses_highlight: false,
+        uses_speed: true,
+        uses_direction: false,
+    },
+    EffectInfo {
+        id: "stealth",
+        name: "Stealth Tactical",
+        description: "Ultra-low-observable dimmed crimson night-vision tactical glow",
+        uses_color: false,
+        uses_highlight: false,
+        uses_speed: true,
+        uses_direction: false,
+    },
 ];
 
 #[derive(Debug, Clone)]
@@ -791,6 +882,232 @@ pub fn build_scene(settings: &Settings) -> Scene {
                 );
             }
             Scene { effects, keys }
+        }
+        "blizzard" => {
+            let p = period(settings.speed, 8.0, 1.2);
+            let step = units(p / 4.0);
+            let c_ice = scale_color((220, 245, 255), settings.brightness);
+            let c_cyan = scale_color((130, 220, 255), settings.brightness);
+            let c_frost = scale_color((0, 140, 255), settings.brightness);
+            let frames = &[
+                (c_cyan, step),
+                (c_frost, step),
+                (c_cyan, step),
+                (c_ice, step),
+            ];
+            let (transitions, _) = fade(c_ice, frames);
+            let eff = Effect::new(c_ice, transitions, Some(get_wave(settings)));
+            let mut effects = HashMap::new();
+            effects.insert(0, eff);
+            let keys = all_keys_matching(|| Key {
+                mode: MODE_EFFECT,
+                effect: 0,
+                ..Default::default()
+            });
+            Scene { effects, keys }
+        }
+        "nebula" => {
+            let p = period(settings.speed, 11.0, 1.6);
+            let step = units(p / 4.0);
+            let c_mag = scale_color((230, 0, 150), settings.brightness);
+            let c_ind = scale_color((50, 0, 180), settings.brightness);
+            let c_pur = scale_color((140, 0, 255), settings.brightness);
+            let frames = &[(c_ind, step), (c_pur, step), (c_ind, step), (c_mag, step)];
+            let (transitions, _) = fade(c_mag, frames);
+            let eff = Effect::new(c_mag, transitions, Some(get_wave(settings)));
+            let mut effects = HashMap::new();
+            effects.insert(0, eff);
+            let keys = all_keys_matching(|| Key {
+                mode: MODE_EFFECT,
+                effect: 0,
+                ..Default::default()
+            });
+            Scene { effects, keys }
+        }
+        "toxic" => {
+            let p = period(settings.speed, 6.0, 0.9);
+            let step = units(p / 4.0);
+            let c_acid = scale_color((57, 255, 20), settings.brightness);
+            let c_sulfur = scale_color((210, 255, 0), settings.brightness);
+            let c_lime = scale_color((0, 180, 20), settings.brightness);
+            let frames = &[
+                (c_sulfur, step),
+                (c_lime, step),
+                (c_sulfur, step),
+                (c_acid, step),
+            ];
+            let (transitions, _) = fade(c_acid, frames);
+            let eff = Effect::new(c_acid, transitions, Some(get_wave(settings)));
+            let mut effects = HashMap::new();
+            effects.insert(0, eff);
+            let keys = all_keys_matching(|| Key {
+                mode: MODE_EFFECT,
+                effect: 0,
+                ..Default::default()
+            });
+            Scene { effects, keys }
+        }
+        "sakura" => {
+            let p = period(settings.speed, 9.0, 1.4);
+            let step = units(p / 4.0);
+            let c_petal = scale_color((255, 183, 197), settings.brightness);
+            let c_white = scale_color((255, 240, 245), settings.brightness);
+            let c_rose = scale_color((255, 105, 180), settings.brightness);
+            let frames = &[
+                (c_rose, step),
+                (c_white, step),
+                (c_petal, step),
+                (c_rose, step),
+            ];
+            let (transitions, _) = fade(c_petal, frames);
+            let eff = Effect::new(c_petal, transitions, Some(get_wave(settings)));
+            let mut effects = HashMap::new();
+            effects.insert(0, eff);
+            let keys = all_keys_matching(|| Key {
+                mode: MODE_EFFECT,
+                effect: 0,
+                ..Default::default()
+            });
+            Scene { effects, keys }
+        }
+        "lightning" => {
+            let p = period(settings.speed, 3.5, 0.5);
+            let t_flash = units(p * 0.06);
+            let t_gap = units(p * 0.04);
+            let t_wait = units(p * 0.70);
+            let c_bolt = scale_color((220, 240, 255), settings.brightness);
+            let c_dark = scale_color((10, 15, 30), settings.brightness);
+            let frames = &[
+                (c_bolt, t_flash),
+                (c_dark, t_gap),
+                (c_bolt, t_flash),
+                (c_dark, t_wait),
+            ];
+            let (transitions, _) = fade(c_dark, frames);
+            let mut effects = HashMap::new();
+            effects.insert(0, Effect::new(c_dark, transitions, None));
+            let keys = all_keys_matching(|| Key {
+                mode: MODE_EFFECT,
+                effect: 0,
+                ..Default::default()
+            });
+            Scene { effects, keys }
+        }
+        "solar" => {
+            let p = period(settings.speed, 6.5, 1.0);
+            let step = units(p / 4.0);
+            let c_white = scale_color((255, 255, 230), settings.brightness);
+            let c_gold = scale_color((255, 190, 0), settings.brightness);
+            let c_flare = scale_color((255, 70, 0), settings.brightness);
+            let frames = &[
+                (c_gold, step),
+                (c_flare, step),
+                (c_gold, step),
+                (c_white, step),
+            ];
+            let (transitions, _) = fade(c_white, frames);
+            let eff = Effect::new(c_white, transitions, Some(get_wave(settings)));
+            let mut effects = HashMap::new();
+            effects.insert(0, eff);
+            let keys = all_keys_matching(|| Key {
+                mode: MODE_EFFECT,
+                effect: 0,
+                ..Default::default()
+            });
+            Scene { effects, keys }
+        }
+        "forest" => {
+            let p = period(settings.speed, 10.0, 1.5);
+            let step = units(p / 4.0);
+            let c_emerald = scale_color((0, 160, 60), settings.brightness);
+            let c_moss = scale_color((20, 70, 20), settings.brightness);
+            let c_leaf = scale_color((40, 210, 80), settings.brightness);
+            let frames = &[
+                (c_moss, step),
+                (c_leaf, step),
+                (c_moss, step),
+                (c_emerald, step),
+            ];
+            let (transitions, _) = fade(c_emerald, frames);
+            let eff = Effect::new(c_emerald, transitions, Some(get_wave(settings)));
+            let mut effects = HashMap::new();
+            effects.insert(0, eff);
+            let keys = all_keys_matching(|| Key {
+                mode: MODE_EFFECT,
+                effect: 0,
+                ..Default::default()
+            });
+            Scene { effects, keys }
+        }
+        "galaxy" => {
+            let p = period(settings.speed, 12.0, 1.8);
+            let step = units(p / 4.0);
+            let c_mid = scale_color((25, 0, 75), settings.brightness);
+            let c_core = scale_color((0, 180, 220), settings.brightness);
+            let c_rim = scale_color((160, 0, 230), settings.brightness);
+            let frames = &[(c_core, step), (c_rim, step), (c_core, step), (c_mid, step)];
+            let (transitions, _) = fade(c_mid, frames);
+            let eff = Effect::new(c_mid, transitions, Some(get_wave(settings)));
+            let mut effects = HashMap::new();
+            effects.insert(0, eff);
+            let keys = all_keys_matching(|| Key {
+                mode: MODE_EFFECT,
+                effect: 0,
+                ..Default::default()
+            });
+            Scene { effects, keys }
+        }
+        "firefly" => {
+            let p = period(settings.speed, 5.0, 0.8);
+            let rise = p * 0.18;
+            let fall = p * 0.32;
+            let fly_yellow = scale_color((180, 255, 20), settings.brightness);
+            let mut effects = HashMap::new();
+
+            for slot in 0..STAR_SLOTS {
+                let offset = (slot as f32) * (p - rise - fall) / ((STAR_SLOTS - 1) as f32);
+                let mut frames = Vec::new();
+                if offset >= TIME_UNIT {
+                    frames.push((BLACK, units(offset)));
+                }
+                frames.push((fly_yellow, units(rise)));
+                frames.push((BLACK, units(fall)));
+                let rest = p - offset - rise - fall;
+                if rest >= TIME_UNIT {
+                    frames.push((BLACK, units(rest)));
+                }
+                let (transitions, _) = fade(BLACK, &frames);
+                effects.insert(slot as u8, Effect::new(BLACK, transitions, None));
+            }
+
+            let mut codes: Vec<u8> = layout::get_keys().iter().map(|k| k.code).collect();
+            let mut rng = rand::rngs::StdRng::seed_from_u64(99);
+            codes.shuffle(&mut rng);
+
+            let mut keys = HashMap::new();
+            for (i, code) in codes.into_iter().enumerate() {
+                keys.insert(
+                    code,
+                    Key {
+                        mode: MODE_EFFECT,
+                        effect: (i % STAR_SLOTS) as u8,
+                        ..Default::default()
+                    },
+                );
+            }
+            Scene { effects, keys }
+        }
+        "stealth" => {
+            let dimmed_red = scale_color((70, 0, 0), settings.brightness);
+            let keys = all_keys_matching(|| Key {
+                color: dimmed_red,
+                mode: protocol::MODE_STATIC,
+                ..Default::default()
+            });
+            Scene {
+                effects: HashMap::new(),
+                keys,
+            }
         }
         _ => {
             let keys = all_keys_matching(|| Key {

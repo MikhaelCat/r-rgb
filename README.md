@@ -2,17 +2,18 @@
 
 # ⚡ rrgb
 
-**Blazing-fast, memory-safe Linux RGB driver & CLI written in Rust for MSI & SteelSeries gaming laptops.**
+**High-performance, memory-safe Linux RGB driver & CLI written in Rust for MSI & SteelSeries gaming laptops.**
 
 [![CI](https://github.com/MikhaelCat/r-steelseries/actions/workflows/ci.yml/badge.svg)](https://github.com/MikhaelCat/r-steelseries/actions)
 [![License: MIT OR Apache-2.0](https://img.shields.io/badge/License-MIT%20OR%20Apache--2.0-blue.svg)](LICENSE-MIT)
 [![Rust Version](https://img.shields.io/badge/rust-1.75%2B-orange.svg)](https://www.rust-lang.org)
 [![Platform](https://img.shields.io/badge/platform-linux-lightgrey.svg)]()
+[![Presets](https://img.shields.io/badge/effects-30%20hardware%20presets-purple.svg)]()
 [![Performance](https://img.shields.io/badge/latency-3.8µs%20generation-brightgreen.svg)]()
 
-*Engineered specifically for MSI laptops equipped with SteelSeries Per-Key RGB keyboards, front Aurora Lightbars, and illuminated Dragon logos.*
+*Engineered specifically for MSI laptops equipped with SteelSeries Per-Key RGB keyboards, front panoramic Aurora Lightbars, and illuminated Dragon logos.*
 
-[Features](#-key-features) • [Installation](#-installation) • [Hardware Diagnostics](#-hardware-diagnostics) • [Lighting Effects](#-lighting-effects-gallery) • [CLI Reference](#-command-line-reference) • [Architecture](#-architecture--benchmarks)
+[Features](#-key-features) • [Installation](#-installation) • [Hardware Diagnostics](#-hardware-diagnostics) • [Lighting Presets (30)](#-curated-lighting-presets-30) • [CLI Reference](#-command-line-reference) • [Architecture](#-architecture--benchmarks)
 
 ---
 
@@ -20,10 +21,10 @@
 
 ## 🌟 Key Features
 
-- **🚀 Ultra-Low Latency:** Written in 100% safe Rust. Scene generation takes **~3.8 microseconds**; commands execute and latch in **2–5 milliseconds** (30x–50x faster than legacy Python scripts).
+- **🚀 Ultra-Low Latency:** Written in 100% safe Rust. Scene generation executes in **~3.8 microseconds**; commands latch to hardware in **2–5 milliseconds** (30x–50x faster than legacy Python scripts).
 - **🔒 Zero CPU & Zero Memory Overhead:** Animations are compiled directly into native hardware firmware bytecode and offloaded onto the onboard SteelSeries microcontroller. Once applied, `rrgb` exits with **0% background CPU usage**.
 - **🌈 Dual-Controller Multi-Zone Sync:** Synchronizes **both** the Per-Key RGB keyboard (`KLC 1038:1122`) and the chassis Aurora Lightbar & Dragon logo (`ALC 1038:1161`) into one cohesive aesthetic theme.
-- **🎨 20 Curated Effects:** Includes the full SteelSeries Engine / GG catalog plus modern atmospheric presets (Cyberpunk 2077, Synthwave Neon, Vaporwave, Volcanic Magma, Matrix Rain, Deep Ocean, Fire, Aurora, and more).
+- **🎨 30 Curated Hardware Effects:** The complete original SteelSeries catalog plus modern atmospheric presets (Cyberpunk, Vaporwave, Volcanic Magma, Cosmic Nebula, Deep Ocean, Arctic Blizzard, Matrix Rain, Sakura, Fire, Aurora, and more).
 - **🔍 Automated Device Probing (`rrgb check`):** Deep inspection of all kernel `/dev/hidraw*` endpoints to diagnose custom VIDs/PIDs across different laptop revisions.
 - **🛡️ Battle-Tested Reliability:** Verified with Criterion micro-benchmarks, unit tests, and continuous 20,000-cycle memory stability test suites in GitHub Actions CI.
 
@@ -116,19 +117,29 @@ rrgb check
 
 ---
 
-## 🎨 Lighting Effects Gallery
+## 🎨 Curated Lighting Presets (30)
 
-`rrgb` includes **20 finely-tuned hardware animation profiles**:
+`rrgb` includes **30 hardware animation presets** tuned specifically for per-key switch matrices and panoramic lightbars:
 
 ```
-EFFECT        DESCRIPTION
-------------  ----------------------------------------
+PRESET        DESCRIPTION
+------------  -------------------------------------------------------------
 cyberpunk     Electrifying contrast of cyber yellow and neon cyan
 neon          Retro 80s outrun wave transitioning hot pink to cyan
 vaporwave     Dreamy nostalgic pastel gradients of violet and peach
 ocean         Underwater sea depth swell transitioning aquamarine to sapphire
 sunset        Vibrant tropical gradient of ruby red, tangerine and violet
 magma         Molten volcanic lava glow slowly rolling across the chassis
+nebula        Deep galactic interstellar dust clouds of magenta and indigo
+blizzard      Icy polar crystalline whites, pale cyans and frosty blues
+toxic         Radioactive acid lime green and sulfur yellow surging wave
+sakura        Delicate spring cherry blossom petaline pinks and white breeze
+lightning     Electric high-voltage lightning flashes through dark stormy skies
+solar         Coronal mass ejection of brilliant solar gold, amber and white
+forest        Organic lush woodland emerald, pine and mossy shadows
+galaxy        Starry spiral arm revolving through deep midnight violet and cyan
+firefly       Enchanted nocturnal fireflies gently drifting across dark grass
+stealth       Ultra-low-observable dimmed crimson night-vision tactical glow
 matrix        Iconic digital cyber glyph rain descending downwards
 fire          Warm flickering embers and rising fire flames
 aurora        Mystic ethereal northern lights in cyan, green and purple
@@ -154,27 +165,32 @@ static        Solid static color across all keys and lightbars
 rrgb on                                  # Enable lighting
 rrgb off                                 # Disable lighting
 rrgb status                              # Print active mode, brightness and device paths
-rrgb effects                             # List all available presets
+rrgb effects                             # List all 30 available presets
 rrgb gui                                 # Launch the graphical control panel
 
-# Modern Aesthetic Presets
+# Atmospheric & Futuristic Presets
 rrgb set cyberpunk -s 50 -d right        # Cyberpunk 2077 neon yellow/cyan flow
+rrgb set nebula -s 40 -d right           # Deep galactic cosmic nebula
+rrgb set blizzard -s 50 -d down          # Polar crystalline ice storm
+rrgb set toxic -s 60 -d out              # Acidic biohazard surge
+rrgb set sakura -s 35 -d right           # Japanese cherry blossom petaline flow
+rrgb set lightning -s 70                 # Electric thunderbolt flashing
+rrgb set solar -s 50 -d out              # Solar flare coronal blast
+rrgb set forest -s 40 -d in              # Ancient woodland emerald canopy
+rrgb set galaxy -s 35 -d out             # Revolving starry spiral galaxy
+rrgb set firefly -s 45                   # Drifting nocturnal summer fireflies
+rrgb set stealth                         # Dimmed crimson covert tactical glow
+
+# Retro & Vaporwave
 rrgb set neon -s 60 -d right             # Synthwave Outrun pink & cyan
 rrgb set vaporwave -s 40                 # Pastel aesthetic violet & teal
-rrgb set ocean -s 35 -d out              # Deep oceanic ripple expanding outward
+rrgb set ocean -s 35 -d out              # Oceanic deep-sea swell
 rrgb set sunset -s 45 -d left            # Miami sunset tropical gradient
 rrgb set magma -s 50 -d down             # Volcanic magma wave descending
 rrgb set matrix -s 65                    # Matrix green digital glyph rain
 rrgb set fire -s 50                      # Natural flame flicker
 
-# Atmospheric & Tactical
-rrgb set aurora -s 40 -d right           # Northern lights wave
-rrgb set police -s 70                    # Red/blue tactical strobe
-rrgb set pulse -c ff0000 -s 40           # Heartbeat cardiogram pulse
-rrgb set starlight -c ffffff -s 50       # Twinkling starlight
-rrgb set reactive -c 001133 --highlight ffffff # Keystroke luminescence
-
-# Solid Static Colors
+# Classic Solid Colors
 rrgb set static -c ff0000                # Pure Red
 rrgb set static -c 00ffff                # Cyber Cyan
 rrgb set static -c 8000ff                # Deep Purple
@@ -219,7 +235,7 @@ rrgb set static -c ffd700                # Gold
 ```
 
 Micro-benchmarked using **Criterion.rs** on AMD / Intel Linux platforms:
-- **Scene Assembly Latency:** `3.89 µs` (static) to `18.4 µs` (20-frame wave interpolation).
+- **Scene Assembly Latency:** `3.89 µs` (static) to `19.2 µs` (interpolated dynamic wave).
 - **Process Memory RSS:** `< 3.2 MB`.
 - **System Call Latency:** ~`180 ms` (dominated solely by USB HID bus transfer rates; CPU computation < `0.01 ms`).
 
