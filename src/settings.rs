@@ -22,6 +22,10 @@ pub struct Settings {
     pub direction: String,
     #[serde(default = "default_half")]
     pub wave_size: f32,
+    #[serde(default)]
+    pub independent_zones: bool,
+    #[serde(default)]
+    pub bar_color: Option<String>,
 }
 
 fn default_true() -> bool {
@@ -57,6 +61,8 @@ impl Default for Settings {
             speed: 0.5,
             direction: default_direction(),
             wave_size: 0.5,
+            independent_zones: false,
+            bar_color: None,
         }
     }
 }
@@ -88,6 +94,45 @@ pub fn default_config_path() -> PathBuf {
         }
     };
     base.join("rrgb").join("settings.json")
+}
+
+pub fn default_profiles_path() -> PathBuf {
+    let base = match std::env::var_os("XDG_CONFIG_HOME") {
+        Some(dir) => PathBuf::from(dir),
+        None => {
+            let home = std::env::var_os("HOME").unwrap_or_default();
+            PathBuf::from(home).join(".config")
+        }
+    };
+    base.join("rrgb").join("profiles.json")
+}
+
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+pub struct AppData {
+    #[serde(default)]
+    pub profiles: std::collections::HashMap<String, Settings>,
+    #[serde(default)]
+    pub favorites: Vec<String>,
+}
+
+pub fn load_app_data<P: AsRef<Path>>(path: P) -> AppData {
+    let p = path.as_ref();
+    if let Ok(data) = fs::read_to_string(p) {
+        if let Ok(app_data) = serde_json::from_str::<AppData>(&data) {
+            return app_data;
+        }
+    }
+    AppData::default()
+}
+
+pub fn save_app_data<P: AsRef<Path>>(app_data: &AppData, path: P) -> std::io::Result<()> {
+    let path = path.as_ref();
+    if let Some(parent) = path.parent() {
+        fs::create_dir_all(parent)?;
+    }
+    let json = serde_json::to_string_pretty(app_data)?;
+    fs::write(path, json)?;
+    Ok(())
 }
 
 pub fn legacy_config_path() -> PathBuf {

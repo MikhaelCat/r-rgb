@@ -2041,53 +2041,73 @@ pub fn build_scene(settings: &Settings) -> Scene {
             Scene { effects, keys }
         }
         "void" => {
-            // Abyssal black hole: pure pitch-black singularity with faint spectral violet event horizon on the edges
-            let p = period(settings.speed, 6.0, 1.0);
-            let horizon_violet = scale_color((130, 0, 220), settings.brightness);
-            let singularity_dim = scale_color((15, 0, 30), settings.brightness);
-            let step = units(p * 0.40);
-            let (tr_horizon, _) = fade(
-                singularity_dim,
-                &[(horizon_violet, step), (singularity_dim, step)],
+            // Cosmic Deep Void: hypnotic vortex spiral twisting inward into a pitch-black abyss
+            let p = period(settings.speed, 6.0, 0.9);
+            let vortex_neon = scale_color((180, 0, 255), settings.brightness);
+            let vortex_cyan = scale_color((0, 190, 255), settings.brightness);
+            let vortex_dim = scale_color((25, 0, 50), settings.brightness);
+            let step = units(p * 0.25);
+            let (tr, _) = fade(
+                vortex_dim,
+                &[
+                    (vortex_neon, step),
+                    (vortex_cyan, step),
+                    (vortex_dim, step * 2),
+                ],
             );
+            let wave_spiral = Wave {
+                x: 0.5,
+                y: 0.5,
+                along_x: true,
+                along_y: true,
+                wavelength: 0.28,
+                inward: true,
+            };
             let mut effects = HashMap::new();
-            effects.insert(0, Effect::new(singularity_dim, tr_horizon, None));
-            let mut keys = HashMap::new();
-            for k in layout::get_keys() {
-                // Outer edges glow with horizon radiation, inner keys stay completely black
-                if k.x <= 1.5 || k.x >= 17.5 || k.y <= 0.8 || k.y >= 5.0 {
-                    keys.insert(
-                        k.code,
-                        Key {
-                            mode: MODE_EFFECT,
-                            effect: 0,
-                            ..Default::default()
-                        },
-                    );
-                } else {
-                    keys.insert(
-                        k.code,
-                        Key {
-                            color: BLACK,
-                            mode: protocol::MODE_STATIC,
-                            ..Default::default()
-                        },
-                    );
-                }
-            }
+            effects.insert(0, Effect::new(vortex_dim, tr, Some(wave_spiral)));
+            let keys = all_keys_matching(|| Key {
+                mode: MODE_EFFECT,
+                effect: 0,
+                ..Default::default()
+            });
             Scene { effects, keys }
         }
         "stealth" => {
-            let dimmed_red = scale_color((70, 0, 0), settings.brightness);
-            let keys = all_keys_matching(|| Key {
-                color: dimmed_red,
-                mode: protocol::MODE_STATIC,
-                ..Default::default()
-            });
-            Scene {
-                effects: HashMap::new(),
-                keys,
+            // Stealth Tactical: covert military night-vision HUD (dark olive tactical background with scanning NVG green crosshairs on WASD & arrows)
+            let p = period(settings.speed, 4.0, 0.6);
+            let nvg_green = scale_color((0, 255, 60), settings.brightness);
+            let nvg_target = scale_color((180, 255, 0), settings.brightness);
+            let covert_dim = scale_color((0, 30, 8), settings.brightness);
+            let step = units(p * 0.30);
+            let (tr_target, _) = fade(nvg_green, &[(nvg_target, step), (nvg_green, step)]);
+            let (tr_covert, _) = fade(
+                covert_dim,
+                &[
+                    (scale_color((0, 55, 15), settings.brightness), step),
+                    (covert_dim, step),
+                ],
+            );
+            let mut effects = HashMap::new();
+            effects.insert(0, Effect::new(nvg_green, tr_target, None));
+            effects.insert(1, Effect::new(covert_dim, tr_covert, None));
+            let mut keys = HashMap::new();
+            for k in layout::get_keys() {
+                // WASD (0x1a, 0x04, 0x16, 0x07) and Arrows (0x4f, 0x50, 0x51, 0x52) stand out as glowing tactical crosshair targets
+                let is_tactical_key = matches!(
+                    k.code,
+                    0x1a | 0x04 | 0x16 | 0x07 | 0x4f | 0x50 | 0x51 | 0x52
+                );
+                let slot = if is_tactical_key { 0 } else { 1 };
+                keys.insert(
+                    k.code,
+                    Key {
+                        mode: MODE_EFFECT,
+                        effect: slot,
+                        ..Default::default()
+                    },
+                );
             }
+            Scene { effects, keys }
         }
         _ => {
             let keys = all_keys_matching(|| Key {

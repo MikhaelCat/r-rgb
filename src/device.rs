@@ -298,6 +298,48 @@ impl MultiDeviceManager {
         Ok(())
     }
 
+    pub fn apply_scenes_zoned(
+        &mut self,
+        kb_scene: &Scene,
+        bar_scene: &Scene,
+    ) -> std::io::Result<()> {
+        let lock_dir = if Path::new("/run/lock").is_dir() {
+            "/run/lock"
+        } else {
+            "/tmp"
+        };
+        let lock_path = Path::new(lock_dir).join("keyglow.lock");
+
+        #[allow(deprecated)]
+        let lock_file = OpenOptions::new()
+            .read(true)
+            .open(&lock_path)
+            .or_else(|_| {
+                OpenOptions::new()
+                    .read(true)
+                    .write(true)
+                    .create(true)
+                    .truncate(false)
+                    .open(&lock_path)
+            })?;
+
+        #[allow(deprecated)]
+        nix::fcntl::flock(lock_file.as_raw_fd(), nix::fcntl::FlockArg::LockExclusive)
+            .map_err(|e| std::io::Error::other(e.to_string()))?;
+
+        for ctrl in &mut self.controllers {
+            let is_bar = ctrl.info.name.to_lowercase().contains("lightbar")
+                || ctrl.info.name.to_lowercase().contains("logo")
+                || ctrl.info.product_id == 0x1161;
+            let target_scene = if is_bar { bar_scene } else { kb_scene };
+            let _ = ctrl.apply_scene(target_scene);
+        }
+
+        #[allow(deprecated)]
+        let _ = nix::fcntl::flock(lock_file.as_raw_fd(), nix::fcntl::FlockArg::Unlock);
+        Ok(())
+    }
+
     pub fn devices(&self) -> &[Controller] {
         &self.controllers
     }

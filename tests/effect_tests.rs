@@ -38,6 +38,7 @@ mod tests {
                 brightness: 1.0,
                 direction: "right".to_string(),
                 wave_size: 0.5,
+                ..Default::default()
             };
             let scene = build_scene(&s);
             assert!(!scene.keys.is_empty(), "Effect {} produced no keys", eff.id);
