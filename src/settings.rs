@@ -87,16 +87,69 @@ pub fn default_config_path() -> PathBuf {
             PathBuf::from(home).join(".config")
         }
     };
+    base.join("rrgb").join("settings.json")
+}
+
+pub fn legacy_config_path() -> PathBuf {
+    let base = match std::env::var_os("XDG_CONFIG_HOME") {
+        Some(dir) => PathBuf::from(dir),
+        None => {
+            let home = std::env::var_os("HOME").unwrap_or_default();
+            PathBuf::from(home).join(".config")
+        }
+    };
     base.join("keyglow").join("settings.json")
 }
 
 pub fn load<P: AsRef<Path>>(path: P) -> Settings {
-    if let Ok(data) = fs::read_to_string(path) {
+    let p = path.as_ref();
+    if let Ok(data) = fs::read_to_string(p) {
         if let Ok(settings) = serde_json::from_str::<Settings>(&data) {
             return settings;
         }
     }
+    // Fallback to legacy keyglow settings if rrgb settings don't exist yet
+    let leg = legacy_config_path();
+    if p != leg {
+        if let Ok(data) = fs::read_to_string(&leg) {
+            if let Ok(settings) = serde_json::from_str::<Settings>(&data) {
+                return settings;
+            }
+        }
+    }
     Settings::default()
+}
+
+pub fn latest_user_settings() -> Option<Settings> {
+    let home_dirs = match fs::read_dir("/home") {
+        Ok(entries) => entries
+            .filter_map(|e| e.ok().map(|e| e.path()))
+            .collect::<Vec<_>>(),
+        Err(_) => Vec::new(),
+    };
+
+    let mut newest_time = std::time::SystemTime::UNIX_EPOCH;
+    let mut newest_settings = None;
+
+    for home in home_dirs {
+        for sub in &["rrgb", "keyglow"] {
+            let conf = home.join(".config").join(sub).join("settings.json");
+            if let Ok(meta) = fs::metadata(&conf) {
+                if let Ok(mtime) = meta.modified() {
+                    if mtime > newest_time {
+                        if let Ok(data) = fs::read_to_string(&conf) {
+                            if let Ok(s) = serde_json::from_str::<Settings>(&data) {
+                                newest_time = mtime;
+                                newest_settings = Some(s);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    newest_settings
 }
 
 pub fn save<P: AsRef<Path>>(settings: &Settings, path: P) -> std::io::Result<()> {

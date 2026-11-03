@@ -31,7 +31,20 @@ enum Commands {
     Apply {
         #[arg(short, long)]
         quiet: bool,
+        /// Maximum seconds to wait/retry if device is reconnecting
+        #[arg(short, long, default_value_t = 0)]
+        wait: u64,
     },
+    /// Apply newest saved settings of any user (used by systemd on boot and resume)
+    Restore {
+        #[arg(short, long)]
+        quiet: bool,
+        /// Maximum seconds to wait/retry while device connects (default 10s)
+        #[arg(short, long, default_value_t = 10)]
+        wait: u64,
+    },
+    /// Launch the graphical interface (GUI)
+    Gui,
     /// Choose an effect and its options
     Set {
         /// Effect name (static, breathing, spectrum, rainbow, wave, starlight, reactive, disco, fire, aurora, neon, police, pulse, matrix)
@@ -95,14 +108,29 @@ fn describe(s: &settings::Settings) {
 fn apply_settings(
     settings: &settings::Settings,
     quiet: bool,
+    wait_secs: u64,
 ) -> Result<(), Box<dyn std::error::Error>> {
-    let mut manager = MultiDeviceManager::load_all()?;
-    let scene = build_scene(settings);
-    manager.apply_scene(&scene)?;
-    if !quiet {
-        describe(settings);
+    let start = std::time::Instant::now();
+    let max_wait = std::time::Duration::from_secs(wait_secs);
+
+    loop {
+        match MultiDeviceManager::load_all() {
+            Ok(mut manager) => {
+                let scene = build_scene(settings);
+                manager.apply_scene(&scene)?;
+                if !quiet {
+                    describe(settings);
+                }
+                return Ok(());
+            }
+            Err(e) => {
+                if start.elapsed() >= max_wait {
+                    return Err(Box::new(e));
+                }
+                std::thread::sleep(std::time::Duration::from_millis(500));
+            }
+        }
     }
-    Ok(())
 }
 
 fn main() {
@@ -179,7 +207,7 @@ fn main() {
         Some(Commands::On) => {
             current.enabled = true;
             let _ = settings::save(&current, &config_path);
-            if let Err(e) = apply_settings(&current, false) {
+            if let Err(e) = apply_settings(&current, false, 0) {
                 eprintln!("Error applying settings: {}", e);
                 process::exit(1);
             }
@@ -187,14 +215,32 @@ fn main() {
         Some(Commands::Off) => {
             current.enabled = false;
             let _ = settings::save(&current, &config_path);
-            if let Err(e) = apply_settings(&current, false) {
+            if let Err(e) = apply_settings(&current, false, 0) {
                 eprintln!("Error applying settings: {}", e);
                 process::exit(1);
             }
         }
-        Some(Commands::Apply { quiet }) => {
-            if let Err(e) = apply_settings(&current, quiet) {
+        Some(Commands::Apply { quiet, wait }) => {
+            if let Err(e) = apply_settings(&current, quiet, wait) {
                 eprintln!("Error applying settings: {}", e);
+                process::exit(1);
+            }
+        }
+        Some(Commands::Restore { quiet, wait }) => {
+            if let Some(latest) = settings::latest_user_settings() {
+                if let Err(e) = apply_settings(&latest, quiet, wait) {
+                    if !quiet {
+                        eprintln!("Error restoring settings: {}", e);
+                    }
+                    process::exit(1);
+                }
+            }
+        }
+        Some(Commands::Gui) => {
+            println!("Launching Keyglow GUI...");
+            let res = std::process::Command::new("keyglow").arg("gui").status();
+            if let Err(e) = res {
+                eprintln!("Could not launch keyglow GUI: {}", e);
                 process::exit(1);
             }
         }
@@ -255,7 +301,7 @@ fn main() {
             }
 
             let _ = settings::save(&current, &config_path);
-            if let Err(e) = apply_settings(&current, false) {
+            if let Err(e) = apply_settings(&current, false, 0) {
                 eprintln!("Error applying settings: {}", e);
                 process::exit(1);
             }
