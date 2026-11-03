@@ -171,12 +171,12 @@ fn build_ui(app: &Application) {
 
     // 4. Categorized Hardware Animation Presets (All 50 Presets)
     let categories = [
-        ("Core", "Classics & Fundamentals"),
-        ("Sci-Fi", "Cyberpunk, Sci-Fi & Digital"),
-        ("Nature", "Nature & Atmospheric Elements"),
-        ("Space", "Astronomy & Deep Cosmos"),
-        ("Ambient", "Mood, Chill & Ambient"),
-        ("Tactical", "Tactical, Action & Dynamic"),
+        ("Core", "Classics and Fundamentals"),
+        ("Sci-Fi", "Cyberpunk, Sci-Fi and Digital"),
+        ("Nature", "Nature and Atmospheric Elements"),
+        ("Space", "Astronomy and Deep Cosmos"),
+        ("Ambient", "Mood, Chill and Ambient"),
+        ("Tactical", "Tactical, Action and Dynamic"),
         ("Harmonies", "Exotic Chromatic Harmonies"),
     ];
 

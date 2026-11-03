@@ -955,63 +955,204 @@ pub fn build_scene(settings: &Settings) -> Scene {
             Scene { effects, keys }
         }
         "tron" => {
-            let p = period(settings.speed, 5.0, 0.8);
-            let (effects, keys) = make_wave_palette(
-                &[(0, 240, 255), (0, 20, 50), (255, 255, 255)],
-                settings.brightness,
-                p,
-                get_wave(settings),
+            // High-contrast cyber grid: blue borders/numpad, white laser runner
+            let p = period(settings.speed, 3.5, 0.5);
+            let laser_white = scale_color((255, 255, 255), settings.brightness);
+            let grid_cyan = scale_color((0, 230, 255), settings.brightness);
+            let grid_dim = scale_color((0, 25, 60), settings.brightness);
+            let step = units(p * 0.15);
+            let hold = units(p * 0.70);
+            let (tr0, _) = fade(
+                grid_dim,
+                &[(grid_cyan, step), (laser_white, step), (grid_dim, hold)],
             );
+            let (tr1, _) = fade(
+                laser_white,
+                &[(grid_dim, hold), (grid_cyan, step), (laser_white, step)],
+            );
+            let mut effects = HashMap::new();
+            effects.insert(0, Effect::new(grid_dim, tr0, Some(get_wave(settings))));
+            effects.insert(1, Effect::new(laser_white, tr1, None));
+            let mut keys = HashMap::new();
+            for k in layout::get_keys() {
+                let slot = if k.x > 14.5 || k.y < 1.0 || k.y > 5.0 {
+                    1
+                } else {
+                    0
+                };
+                keys.insert(
+                    k.code,
+                    Key {
+                        mode: MODE_EFFECT,
+                        effect: slot,
+                        ..Default::default()
+                    },
+                );
+            }
             Scene { effects, keys }
         }
         "quantum" => {
-            let p = period(settings.speed, 7.5, 1.1);
-            let (effects, keys) = make_wave_palette(
-                &[(75, 0, 130), (0, 255, 200), (0, 40, 100)],
-                settings.brightness,
-                p,
-                get_wave(settings),
-            );
+            // Quantum Flux: oscillating subatomic energy particles across staggered spatial hashes
+            let p = period(settings.speed, 5.0, 0.7);
+            let step = units(p * 0.20);
+            let mut effects = HashMap::new();
+            let q_indigo = scale_color((60, 0, 160), settings.brightness);
+            let q_teal = scale_color((0, 255, 180), settings.brightness);
+            let q_white = scale_color((200, 255, 255), settings.brightness);
+            let palette = [q_indigo, q_teal, q_white, BLACK];
+            for (slot, &col) in palette.iter().enumerate() {
+                let next_col = palette[(slot + 1) % 4];
+                let (tr, _) = fade(col, &[(next_col, step), (col, step * 2)]);
+                effects.insert(slot as u8, Effect::new(col, tr, None));
+            }
+            let mut keys = HashMap::new();
+            for k in layout::get_keys() {
+                let slot = (((k.x * 2.0) as usize) ^ ((k.y * 3.0) as usize)) % 4;
+                keys.insert(
+                    k.code,
+                    Key {
+                        mode: MODE_EFFECT,
+                        effect: slot as u8,
+                        ..Default::default()
+                    },
+                );
+            }
             Scene { effects, keys }
         }
         "overclock" => {
-            let p = period(settings.speed, 4.5, 0.7);
-            let (effects, keys) = make_wave_palette(
-                &[(255, 0, 0), (255, 120, 0), (60, 0, 0)],
-                settings.brightness,
-                p,
-                get_wave(settings),
+            // Overclock: intense crimson core with rapid orange/white spark pulses
+            let p = period(settings.speed, 2.5, 0.4);
+            let hot_red = scale_color((255, 0, 10), settings.brightness);
+            let hot_orange = scale_color((255, 120, 0), settings.brightness);
+            let white_spark = scale_color((255, 255, 255), settings.brightness);
+            let step = units(p * 0.12);
+            let (tr0, _) = fade(hot_red, &[(hot_orange, step), (hot_red, step * 2)]);
+            let (tr1, _) = fade(
+                white_spark,
+                &[(hot_orange, step), (hot_red, step), (white_spark, step)],
             );
-            Scene { effects, keys }
-        }
-        "supernova" => {
-            let p = period(settings.speed, 6.0, 0.9);
-            let (effects, keys) = make_wave_palette(
-                &[(255, 255, 255), (200, 0, 255), (255, 100, 0)],
-                settings.brightness,
-                p,
-                get_wave(settings),
-            );
-            Scene { effects, keys }
-        }
-        "eclipse" => {
-            let p = period(settings.speed, 8.5, 1.3);
-            let (effects, keys) = make_wave_palette(
-                &[(10, 5, 20), (255, 190, 80), (10, 5, 20)],
-                settings.brightness,
-                p,
-                get_wave(settings),
-            );
+            let mut effects = HashMap::new();
+            effects.insert(0, Effect::new(hot_red, tr0, None));
+            effects.insert(1, Effect::new(white_spark, tr1, None));
+            let mut keys = HashMap::new();
+            for k in layout::get_keys() {
+                let slot = if (k.code % 5) == 0 { 1 } else { 0 };
+                keys.insert(
+                    k.code,
+                    Key {
+                        mode: MODE_EFFECT,
+                        effect: slot,
+                        ..Default::default()
+                    },
+                );
+            }
             Scene { effects, keys }
         }
         "meteor" => {
-            let p = period(settings.speed, 4.0, 0.6);
-            let (effects, keys) = make_wave_palette(
-                &[(255, 240, 200), (0, 0, 0), (0, 0, 0)],
-                settings.brightness,
-                p,
-                get_wave(settings),
+            // High-speed incandescent shooting stars on dark backdrop
+            let p = period(settings.speed, 2.5, 0.4);
+            let flash = units(p * 0.08);
+            let tail = units(p * 0.22);
+            let rest = units(p * 0.70);
+            let meteor_head = scale_color((255, 255, 230), settings.brightness);
+            let meteor_tail = scale_color((255, 140, 20), settings.brightness);
+            let mut effects = HashMap::new();
+            for slot in 0..STAR_SLOTS {
+                let delay = units(slot as f32 * (p * 0.70 / (STAR_SLOTS as f32)));
+                let frames = &[
+                    (BLACK, delay),
+                    (meteor_head, flash),
+                    (meteor_tail, tail),
+                    (BLACK, rest),
+                ];
+                let (transitions, _) = fade(BLACK, frames);
+                effects.insert(slot as u8, Effect::new(BLACK, transitions, None));
+            }
+            let mut codes: Vec<u8> = layout::get_keys().iter().map(|k| k.code).collect();
+            let mut rng = rand::rngs::StdRng::seed_from_u64(88);
+            codes.shuffle(&mut rng);
+            let mut keys = HashMap::new();
+            for (i, code) in codes.into_iter().enumerate() {
+                keys.insert(
+                    code,
+                    Key {
+                        mode: MODE_EFFECT,
+                        effect: (i % STAR_SLOTS) as u8,
+                        ..Default::default()
+                    },
+                );
+            }
+            Scene { effects, keys }
+        }
+        "supernova" => {
+            // Blinding explosion flash decaying outward through violet and amber
+            let p = period(settings.speed, 4.0, 0.7);
+            let wave_out = Wave {
+                x: 0.5,
+                y: 0.5,
+                along_x: true,
+                along_y: true,
+                wavelength: 0.35,
+                inward: false,
+            };
+            let flash = units(p * 0.10);
+            let exp_violet = scale_color((180, 0, 255), settings.brightness);
+            let exp_amber = scale_color((255, 120, 0), settings.brightness);
+            let c_white = scale_color((255, 255, 255), settings.brightness);
+            let decay = units(p * 0.35);
+            let after = units(p * 0.40);
+            let pause = units(p * 0.15);
+            let (tr, _) = fade(
+                BLACK,
+                &[
+                    (c_white, flash),
+                    (exp_violet, decay),
+                    (exp_amber, after),
+                    (BLACK, pause),
+                ],
             );
+            let mut effects = HashMap::new();
+            effects.insert(0, Effect::new(BLACK, tr, Some(wave_out)));
+            let keys = all_keys_matching(|| Key {
+                mode: MODE_EFFECT,
+                effect: 0,
+                ..Default::default()
+            });
+            Scene { effects, keys }
+        }
+        "eclipse" => {
+            // Dark totality disk with bright golden corona ring expanding from center
+            let p = period(settings.speed, 6.0, 1.0);
+            let corona_gold = scale_color((255, 200, 40), settings.brightness);
+            let corona_white = scale_color((255, 245, 220), settings.brightness);
+            let deep_shadow = scale_color((10, 0, 25), settings.brightness);
+            let ring_wave = Wave {
+                x: 0.5,
+                y: 0.5,
+                along_x: true,
+                along_y: true,
+                wavelength: 0.25,
+                inward: false,
+            };
+            let step = units(p * 0.18);
+            let linger = units(p * 0.24);
+            let shadow_time = units(p * 0.40);
+            let (tr, _) = fade(
+                deep_shadow,
+                &[
+                    (corona_gold, step),
+                    (corona_white, step),
+                    (corona_gold, linger),
+                    (deep_shadow, shadow_time),
+                ],
+            );
+            let mut effects = HashMap::new();
+            effects.insert(0, Effect::new(deep_shadow, tr, Some(ring_wave)));
+            let keys = all_keys_matching(|| Key {
+                mode: MODE_EFFECT,
+                effect: 0,
+                ..Default::default()
+            });
             Scene { effects, keys }
         }
         "dusk" => {
