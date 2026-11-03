@@ -237,12 +237,8 @@ fn main() {
             }
         }
         Some(Commands::Gui) => {
-            println!("Launching Keyglow GUI...");
-            let res = std::process::Command::new("keyglow").arg("gui").status();
-            if let Err(e) = res {
-                eprintln!("Could not launch keyglow GUI: {}", e);
-                process::exit(1);
-            }
+            let exit_code = r_steelseries::gui::run_gui();
+            process::exit(i32::from(exit_code));
         }
         Some(Commands::Set {
             effect,
