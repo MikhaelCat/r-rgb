@@ -84,6 +84,11 @@ enum Commands {
         #[arg(long)]
         wave_size: Option<f32>,
     },
+    /// Adjust lighting brightness (0-100, or relative +/- like +10, -10, up, down)
+    Brightness {
+        /// Value: 0-100, +N, -N, up, down, max, min, or toggle
+        value: Option<String>,
+    },
 }
 
 fn describe(s: &settings::Settings) {
@@ -333,6 +338,61 @@ fn main() {
             if let Err(e) = apply_settings(&current, false, 0) {
                 eprintln!("Error applying settings: {}", e);
                 process::exit(1);
+            }
+        }
+        Some(Commands::Brightness { value }) => {
+            match value {
+                None => {
+                    println!("Current brightness: {}%", (current.brightness * 100.0).round());
+                }
+                Some(val_str) => {
+                    let v = val_str.trim().to_lowercase();
+                    let current_pct = (current.brightness * 100.0).round();
+                    let new_pct: f32 = if v == "up" || v == "+10" {
+                        current_pct + 10.0
+                    } else if v == "down" || v == "-10" {
+                        current_pct - 10.0
+                    } else if v == "max" {
+                        100.0
+                    } else if v == "min" {
+                        5.0
+                    } else if v == "toggle" {
+                        if current.enabled && current.brightness > 0.0 {
+                            0.0
+                        } else {
+                            100.0
+                        }
+                    } else if let Some(stripped) = v.strip_prefix('+') {
+                        let step: f32 = stripped.trim().parse().unwrap_or(10.0);
+                        current_pct + step
+                    } else if let Some(stripped) = v.strip_prefix('-') {
+                        let step: f32 = stripped.trim().parse().unwrap_or(10.0);
+                        current_pct - step
+                    } else if let Ok(direct) = v.parse::<f32>() {
+                        direct
+                    } else {
+                        eprintln!(
+                            "Invalid brightness value '{}'. Use 0-100, +10, -10, up, down, max, min, or toggle.",
+                            val_str
+                        );
+                        process::exit(1);
+                    };
+
+                    let clamped_pct = new_pct.clamp(0.0, 100.0);
+                    if clamped_pct == 0.0 {
+                        current.enabled = false;
+                        current.brightness = 0.0;
+                    } else {
+                        current.enabled = true;
+                        current.brightness = clamped_pct / 100.0;
+                    }
+
+                    let _ = settings::save(&current, &config_path);
+                    if let Err(e) = apply_settings(&current, false, 0) {
+                        eprintln!("Error applying brightness: {}", e);
+                        process::exit(1);
+                    }
+                }
             }
         }
     }
