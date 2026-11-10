@@ -1,11 +1,11 @@
 [Unit]
 Description=Restore rrgb keyboard & lightbar lighting at graphical login
-PartOf=graphical-session.target
-After=graphical-session.target
+PartOf=graphical-session.target default.target
+After=graphical-session.target default.target
 
 [Service]
 Type=oneshot
-ExecStart=/usr/local/bin/rrgb apply --quiet --wait 5
+ExecStart=/bin/sh -c 'if command -v rrgb >/dev/null 2>&1; then exec rrgb apply --quiet --wait 5; elif [ -x /usr/local/bin/rrgb ]; then exec /usr/local/bin/rrgb apply --quiet --wait 5; elif [ -x /usr/bin/rrgb ]; then exec /usr/bin/rrgb apply --quiet --wait 5; fi'
 
 [Install]
-WantedBy=graphical-session.target
+WantedBy=graphical-session.target default.target

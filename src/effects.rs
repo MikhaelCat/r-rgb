@@ -583,6 +583,9 @@ where
     for k in layout::get_keys() {
         map.insert(k.code, f());
     }
+    for zid in 0..6u8 {
+        map.insert(zid, f());
+    }
     map
 }
 

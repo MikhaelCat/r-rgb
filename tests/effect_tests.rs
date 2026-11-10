@@ -2,7 +2,8 @@
 mod tests {
     use r_rgb::build_scene;
     use r_rgb::protocol::{
-        empty_effect_packet, key_packets, refresh_packet, FEATURE_SIZE, OUTPUT_SIZE,
+        alc_key_packet, alc_report_0c, empty_effect_packet, key_packets, refresh_packet,
+        FEATURE_SIZE, OUTPUT_SIZE, STEELSERIES_MSI_RGB_ALC_MODE, STEELSERIES_MSI_RGB_OPCODE,
     };
     use r_rgb::settings::{format_color, parse_color, Settings};
 
@@ -54,5 +55,38 @@ mod tests {
                 assert_eq!(pkt[0], 0x0E);
             }
         }
+    }
+
+    #[test]
+    fn test_alc_packets() {
+        let zones = [
+            (0u8, (255, 0, 0)),
+            (1u8, (0, 255, 0)),
+            (2u8, (0, 0, 255)),
+            (3u8, (255, 255, 255)),
+        ];
+        let rep_0c = alc_report_0c(&zones);
+        assert_eq!(rep_0c.len(), FEATURE_SIZE);
+        assert_eq!(rep_0c[0], STEELSERIES_MSI_RGB_OPCODE);
+        assert_eq!(rep_0c[2], STEELSERIES_MSI_RGB_ALC_MODE);
+        assert_eq!(rep_0c[4], 0);
+        assert_eq!(rep_0c[5], 255);
+        assert_eq!(rep_0c[6], 0);
+        assert_eq!(rep_0c[7], 0);
+
+        let mut keys = std::collections::HashMap::new();
+        for &(z, c) in &zones {
+            keys.insert(
+                z,
+                r_rgb::protocol::Key {
+                    color: c,
+                    ..Default::default()
+                },
+            );
+        }
+        let rep_0e = alc_key_packet(&keys);
+        assert_eq!(rep_0e.len(), FEATURE_SIZE);
+        assert_eq!(rep_0e[0], 0x0E);
+        assert_eq!(rep_0e[2], STEELSERIES_MSI_RGB_ALC_MODE);
     }
 }

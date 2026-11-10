@@ -40,6 +40,20 @@ pub const WAVE_Y_MAX: u16 = 0x040D;
 pub const WAVELENGTH_MIN: f32 = 0x1F as f32;
 pub const WAVELENGTH_MAX: f32 = 0x3E9 as f32;
 
+// ALC (Ambient / Aurora Lighting Controller - Lightbar & Dragon logo) constants
+pub const STEELSERIES_MSI_RGB_OPCODE: u8 = 0x0C;
+pub const STEELSERIES_MSI_RGB_ALC_MODE: u8 = 0x06;
+pub const STEELSERIES_MSI_RGB_KLC_MODE: u8 = 0x66;
+
+pub const ALC_ZONE_LIGHTBAR_L: u8 = 0;
+pub const ALC_ZONE_LIGHTBAR_C: u8 = 1;
+pub const ALC_ZONE_LIGHTBAR_R: u8 = 2;
+pub const ALC_ZONE_DRAGON: u8 = 3;
+pub const ALC_ZONE_LIGHTBAR_EXT: u8 = 4;
+pub const ALC_ZONE_DRAGON_EXT: u8 = 5;
+
+pub const ALC_ZONES: &[u8] = &[0, 1, 2, 3, 4, 5];
+
 const KEY_PACKET_TAIL: [u8; 16] = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0x08, 0x39];
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -228,6 +242,59 @@ pub fn empty_effect_packet(slot: u8) -> [u8; FEATURE_SIZE] {
     let mut packet = [0u8; FEATURE_SIZE];
     packet[0] = 0x0B;
     packet[2] = slot;
+    packet
+}
+
+pub fn alc_report_0c(zones: &[(u8, (u8, u8, u8))]) -> [u8; FEATURE_SIZE] {
+    let mut packet = [0xFFu8; FEATURE_SIZE];
+    packet[0] = STEELSERIES_MSI_RGB_OPCODE; // 0x0C
+    packet[1] = 0x00;
+    packet[2] = STEELSERIES_MSI_RGB_ALC_MODE; // 0x06
+    packet[3] = 0x00;
+
+    for (i, &(zone, (r, g, b))) in zones.iter().enumerate() {
+        let offset = 4 + i * 4;
+        if offset + 3 < FEATURE_SIZE {
+            packet[offset] = zone;
+            packet[offset + 1] = r;
+            packet[offset + 2] = g;
+            packet[offset + 3] = b;
+        }
+    }
+    packet
+}
+
+pub fn alc_key_packet(keys: &HashMap<u8, Key>) -> [u8; FEATURE_SIZE] {
+    let mut packet = [0u8; FEATURE_SIZE];
+    packet[0] = 0x0E;
+    packet[1] = 0x00;
+    packet[2] = STEELSERIES_MSI_RGB_ALC_MODE; // 0x06
+    packet[3] = 0x00;
+
+    let mut offset = 4;
+    for &zone in ALC_ZONES {
+        let key = keys.get(&zone).copied().unwrap_or_default();
+        packet[offset] = key.color.0;
+        packet[offset + 1] = key.color.1;
+        packet[offset + 2] = key.color.2;
+
+        packet[offset + 3] = key.reactive_color.0;
+        packet[offset + 4] = key.reactive_color.1;
+        packet[offset + 5] = key.reactive_color.2;
+
+        let ms_bytes = key.reactive_ms.to_le_bytes();
+        packet[offset + 6] = ms_bytes[0];
+        packet[offset + 7] = ms_bytes[1];
+
+        packet[offset + 8] = key.effect;
+        packet[offset + 9] = key.mode;
+        packet[offset + 10] = 0x00;
+        packet[offset + 11] = zone;
+
+        offset += 12;
+    }
+
+    packet[508..524].copy_from_slice(&KEY_PACKET_TAIL);
     packet
 }
 

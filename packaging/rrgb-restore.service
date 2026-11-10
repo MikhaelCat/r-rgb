@@ -1,11 +1,11 @@
 [Unit]
 Description=Restore rrgb keyboard & lightbar lighting on boot and resume
 Documentation=https://github.com/MikhaelCat/r-rgb
-After=suspend.target hibernate.target hybrid-sleep.target suspend-then-hibernate.target
+After=basic.target multi-user.target suspend.target hibernate.target hybrid-sleep.target suspend-then-hibernate.target
 
 [Service]
 Type=oneshot
-ExecStart=/usr/local/bin/rrgb restore --quiet --wait 10
+ExecStart=/bin/sh -c 'if [ -x /usr/local/bin/rrgb ]; then exec /usr/local/bin/rrgb restore --quiet --wait 10; elif [ -x /usr/bin/rrgb ]; then exec /usr/bin/rrgb restore --quiet --wait 10; fi'
 
 [Install]
-WantedBy=suspend.target hibernate.target hybrid-sleep.target suspend-then-hibernate.target
+WantedBy=multi-user.target suspend.target hibernate.target hybrid-sleep.target suspend-then-hibernate.target
